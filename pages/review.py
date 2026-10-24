@@ -225,12 +225,17 @@ if case["status"] in MATCHED:
     st.caption("All required checks passed; no AI explanation needed.")
 elif expl is None:
     if st.button("Get AI suggestion"):
-        with st.spinner("Requesting explanation..."):
-            expl, _ = orchestrator.request_ai_explanation(conn, case_id)
-        if expl.status == "AI_UNAVAILABLE":
-            st.warning(f"AI_UNAVAILABLE — {expl.uncertainty_note}")
+        try:
+            with st.spinner("Requesting explanation..."):
+                expl, _ = orchestrator.request_ai_explanation(conn, case_id)
+        except AuditPersistenceError:
+            expl = None
+            st.error(orchestrator.ACTION_NOT_SAVED)
         else:
-            st.rerun()
+            if expl.status == "AI_UNAVAILABLE":
+                st.warning(f"AI_UNAVAILABLE — {expl.uncertainty_note}")
+            else:
+                st.rerun()
 if expl is not None:
     with st.container(border=True):
         st.markdown("##### 🤖 AI Suggestion — requires human review")
