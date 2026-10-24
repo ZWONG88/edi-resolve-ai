@@ -103,3 +103,9 @@ def test_ai_provider_failure_keeps_deterministic_review_available(monkeypatch) -
     assert not review.exception
     assert any("AI_UNAVAILABLE" in w.value for w in review.warning)
     assert any("Discrepancies" in s.value for s in review.subheader)
+
+
+def test_app_entry_renders() -> None:
+    """The real entry point (st.navigation + st.logo) must load, not just the pages."""
+    app = AppTest.from_file("../app.py", default_timeout=30).run()
+    assert not app.exception
