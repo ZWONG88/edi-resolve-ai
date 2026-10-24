@@ -279,13 +279,18 @@ def test_run_id_distinct_from_case_id():
 def test_settings_defaults(tmp_path, monkeypatch):
     # Ensure no .env file interferes by pointing settings at a nonexistent path
     monkeypatch.chdir(tmp_path)
+    for var in ("AI_PROVIDER", "AI_API_KEY", "AI_MODEL_ID", "WATSONX_PROJECT_ID",
+                "THREE_WAY_ENABLED", "MAX_RETRY_ATTEMPTS"):
+        monkeypatch.delenv(var, raising=False)
     s = Settings(_env_file=str(tmp_path / ".env.nonexistent"))
     assert s.ai_provider == "mock"
     assert s.three_way_enabled is True
     assert s.max_retry_attempts == 3
 
 
-def test_settings_loads_env_file(tmp_path):
+def test_settings_loads_env_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("AI_PROVIDER", raising=False)
     env_file = tmp_path / ".env"
     env_file.write_text("AI_PROVIDER=openai\n")
     s = Settings(_env_file=str(env_file))
