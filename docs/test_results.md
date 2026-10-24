@@ -1,6 +1,7 @@
 # Test Results — P0 Release Gate
 
 Recorded 2026-10-23 on branch `feature/three-way-rules`, synthetic fixtures plus the team datasets (`tests/fixtures/`), Python 3.12.7, `AI_PROVIDER=mock`.
+Updated 2026-10-24: live IBM watsonx.ai integration verified (`AI_PROVIDER=watsonx`, model `ibm/granite-4-h-small`, project `8b6b4870-b6dc-4834-ab3f-476707d3b432`, US South).
 These are results on labeled synthetic data only. They say nothing about production
 accuracy or payment timing (PRD 22.2).
 
@@ -16,6 +17,7 @@ accuracy or payment timing (PRD 22.2).
 | PR #1 schema tests (`tests/test_models.py`) | **23 / 23 passed** |
 | Other: parser 13, reference 11, comparator 13, AI 16, adapters 7, db 2, UI 3 | all passed |
 | `ruff check .` | All checks passed |
+| **Live watsonx.ai integration** (`pytest -m integration`) | **PASSED** — `ibm/granite-4-h-small`, 2026-10-24 |
 
 ## Team datasets: per-category outcomes (three-way)
 
