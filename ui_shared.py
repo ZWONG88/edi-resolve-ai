@@ -14,6 +14,13 @@ from backend import ai_resolver, orchestrator  # noqa: E402  (env must load firs
 from backend.models import AIExplanation  # noqa: E402
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
+BRAND_MARK = Path(__file__).resolve().parent / "assets" / "reconcileai.svg"
+NAV_ITEMS = (
+    ("Reconciliations", "pages/workspace.py", ":material/dashboard:"),
+    ("Upload & Process", "pages/upload.py", ":material/upload_file:"),
+    ("Exception Review", "pages/review.py", ":material/rule:"),
+    ("Audit History", "pages/audit.py", ":material/history:"),
+)
 
 # Demo scenarios: label -> (PO file or None, invoice file, optional 861 file)
 SCENARIOS: dict[str, tuple[str | None, str, str | None]] = {
@@ -57,6 +64,9 @@ STATE_COLORS = {
     "RESOLUTION_APPROVED": "green",
     "RECOMMENDATION_REJECTED": "orange",
     "ESCALATED": "violet",
+    "CHECK_PASSED": "green",
+    "CHECK_FAILED": "red",
+    "CHECK_NOT_EVALUATED": "violet",
 }
 
 
@@ -99,9 +109,18 @@ def mode_banner() -> None:
         "mock_unavailable": "Mock — always unavailable",
         "watsonx": "IBM watsonx.ai Granite",
     }.get(ai_resolver.provider_name(), f"Unsupported ({ai_resolver.provider_name()})")
-    st.sidebar.markdown("### EDIResolve AI")
-    st.sidebar.caption("Reconciliation workspace")
+    if st.session_state.get("_app_navigation_enabled"):
+        active_title = st.session_state.get("_active_navigation_title")
+        for title, page_path, icon in NAV_ITEMS:
+            if st.sidebar.button(
+                title,
+                type="primary" if title == active_title else "secondary",
+                icon=icon,
+                width="stretch",
+                key=f"app-nav::{title}",
+            ):
+                st.switch_page(page_path)
     st.sidebar.divider()
-    st.sidebar.markdown(f"**Matching:** Two-way (P0)  \n**AI:** {ai_mode}")
+    st.sidebar.markdown(f"**Matching**  \nTwo-way (P0)  \n\n**AI explanations**  \n{ai_mode}")
     st.sidebar.caption("Receipt (861) matching is disabled. No action here pays an invoice "
                        "or changes an external system.")

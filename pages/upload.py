@@ -10,6 +10,7 @@ from ui_shared import RAW_DIR, SCENARIOS, badge, get_conn, mode_banner
 
 mode_banner()
 st.title("Upload & Process")
+st.caption("STEP 1 · INGESTION")
 st.caption("Load an EDI 850 purchase order and an EDI 810 invoice. Deterministic rules run "
            "first; AI explanations are requested later, on demand.")
 
@@ -22,24 +23,42 @@ with st.container(border=True):
     if source == "Sample scenario":
         label = st.selectbox("Scenario", list(SCENARIOS))
         po_file, inv_file, receipt_file = SCENARIOS[label]
-        st.caption(f"PO: `{po_file or '(none)'}` · Invoice: `{inv_file}`"
-                   + (f" · Receipt: `{receipt_file}`" if receipt_file else ""))
         po_bytes = (RAW_DIR / po_file).read_bytes() if po_file else None
         inv_bytes = (RAW_DIR / inv_file).read_bytes()
         receipt_bytes = (RAW_DIR / receipt_file).read_bytes() if receipt_file else None
+
+        po_card, invoice_card = st.columns(2)
+        with po_card, st.container(border=True):
+            st.markdown("**EDI 850 · Purchase order**")
+            st.code(po_file or "No purchase order in this scenario", language=None)
+            st.caption("Ready to reconcile" if po_file else
+                       "This scenario tests missing PO handling")
+        with invoice_card, st.container(border=True):
+            st.markdown("**EDI 810 · Supplier invoice**")
+            st.code(inv_file, language=None)
+            st.caption("Ready to reconcile")
+        if receipt_file:
+            st.info(f"EDI 861 receipt `{receipt_file}` will be stored with the case. Receipt "
+                    "verification is NOT_EVALUATED while P2 three-way matching is disabled.")
     else:
-        c1, c2, c3 = st.columns(3)
-        po_up = c1.file_uploader("EDI 850 purchase order (JSON)", type="json")
-        inv_up = c2.file_uploader("EDI 810 invoice (JSON)", type="json")
-        rc_up = c3.file_uploader("EDI 861 receipt (optional)", type="json")
+        po_card, invoice_card = st.columns(2)
+        with po_card, st.container(border=True):
+            st.markdown("**EDI 850 · Purchase order**")
+            po_up = st.file_uploader("Select normalized JSON", type="json", key="upload_po")
+        with invoice_card, st.container(border=True):
+            st.markdown("**EDI 810 · Supplier invoice**")
+            inv_up = st.file_uploader("Select normalized JSON", type="json", key="upload_invoice")
         po_bytes = po_up.getvalue() if po_up else None
         inv_bytes = inv_up.getvalue() if inv_up else None
+        with st.container(border=True):
+            st.markdown("**EDI 861 · Optional receipt document**")
+            st.caption("Receipt verification is NOT_EVALUATED while P2 three-way matching is "
+                       "disabled. This input stores the document only.")
+            rc_up = st.file_uploader("Select normalized JSON receipt", type="json",
+                                     key="upload_receipt")
         receipt_bytes = rc_up.getvalue() if rc_up else None
-        if rc_up:
-            st.info("861 receipts are stored but unsupported for reconciliation while "
-                    "THREE_WAY_ENABLED=false; the receipt check will show NOT_EVALUATED.")
 
-if st.button("Process", type="primary", disabled=inv_bytes is None):
+if st.button("Run reconciliation", type="primary", disabled=inv_bytes is None):
     try:
         with st.spinner("Parsing and running deterministic checks..."):
             out = orchestrator.process(conn, inv_bytes, po_bytes, receipt_bytes)
