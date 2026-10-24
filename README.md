@@ -1,4 +1,4 @@
-# EDI Resolve
+# EDI Resolve AI
 
 IBM Group 15: Darren San | Manasi Shitole | Nidhi Khandewal | Shruthi Raghavan | Zach Wong
 
