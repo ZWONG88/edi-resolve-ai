@@ -228,6 +228,27 @@ def test_rule_4_1_de_minimis(conn) -> None:
     assert result(conn, out.case_id)["line_results"][0]["de_minimis"] is True
 
 
+def test_rule_4_1_header_de_minimis(conn) -> None:
+    rcv = t.receipt([(1, "SKU-A", "100", "100", "0", "EA")])
+    out = run(conn, t.invoice([(1, "SKU-A", "100", "EA", "2.00", "200.00")], total="201.00"),
+              PO_100, rcv)
+    c = case(conn, out.case_id)
+    assert c["status"] == "PRICE_VARIANCE"  # header variance still recorded
+    assert c["disposition_status"] == "AUTO_APPROVED"
+    assert (c["approved_amount"], Decimal(c["blocked_amount"])) == ("201.00", 0)
+    remit = json.loads(orchestrator.current_remittance(conn, out.case_id)["payload_json"])
+    assert (remit["paid_amount"], remit["header_waived"]) == ("201.00", "1.00")
+
+    over = run(conn, t.invoice([(1, "SKU-A", "100", "EA", "2.00", "200.00")], number="INV-T2",
+                               po_number="PO-T2", total="201.01"),
+               t.po([(1, "SKU-A", "100", "EA", "2.00")], number="PO-T2"),
+               t.receipt([(1, "SKU-A", "100", "100", "0", "EA")], number="RA-T2",
+                         po_number="PO-T2"))
+    c2 = case(conn, over.case_id)
+    assert c2["disposition_status"] == "APPROVED_WITH_SHORT_PAY"
+    assert c2["blocked_amount"] == "1.01"
+
+
 def test_rule_4_2_high_value_hold_then_approval_generates_820(conn) -> None:
     po = t.po([(1, "SKU-A", "1000", "EA", "2.00")])
     out = run(conn, t.invoice([(1, "SKU-A", "1000", "EA", "2.60", "2600.00")]), po,

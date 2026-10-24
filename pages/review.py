@@ -114,6 +114,8 @@ for note in result.get("notes", []):
 for finding in result.get("header_findings", []):
     if finding.get("result_state"):
         st.error(f"**{finding['result_state']}** ({finding['check']}): {finding['message']}")
+    elif finding["check"] == "invoice_total_de_minimis":
+        st.info(finding["message"])
 
 lines = result.get("line_results", [])
 flagged = [ln for ln in lines if ln["status"] not in MATCHED or ln.get("de_minimis")

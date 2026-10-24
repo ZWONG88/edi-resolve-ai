@@ -8,7 +8,7 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **142 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| Full `pytest` | **143 passed**, 0 failed, 1 deselected (live watsonx integration test) |
 | AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
 | AT25–AT35 three-way (`tests/test_three_way.py`) | **AT25–AT32, AT34, AT35 passed**. AT33 and AT36 are not implemented. |
 | Team rules doc (`tests/test_three_way.py`, `test_disposition.py`) | Rules 1.2, 2.2, 3.1, 3.2, 4.1 and 4.2, the 820 and supersession all pass |
@@ -23,7 +23,7 @@ accuracy or payment timing (PRD 22.2).
 |---|---|---|
 | Dataset 1 (PO-10001, 50 lines) | 1 | `MATCHED_3WAY` → `AUTO_APPROVED`; $36,673.98 approved, $0 blocked; 820 paid in full |
 | DATASET 3 (PO-10002, 50 lines) | 1 | `NEEDS_HUMAN_AP_REVIEW`; 7 lines flagged; $382.00 blocked |
-| Dataset2 | 60 | 25 auto-approved, 15 short pay, 10 need AP review, 10 held |
+| Dataset2 | 60 | 30 auto-approved, 10 short pay, 10 need AP review, 10 held |
 
 **Dataset2 by category**
 
@@ -33,14 +33,14 @@ accuracy or payment timing (PRD 22.2).
 | CS vs EA (pack size from catalog) | 10 | `MATCHED_3WAY` → `AUTO_APPROVED` |
 | Partial billing | 5 | `PARTIAL_BILLING` → `AUTO_APPROVED` |
 | Price overcharge | 5 | `PRICE_VARIANCE` → `APPROVED_WITH_SHORT_PAY` (blocked = (inv − PO) × qty) |
-| Header total $1.00 above lines | 5 | `PRICE_VARIANCE` → `APPROVED_WITH_SHORT_PAY` ($1.00 each; see open question) |
+| Header total $1.00 above lines | 5 | `PRICE_VARIANCE` → `AUTO_APPROVED` ($1.00 waived per rule 4.1, team decision; variance still recorded) |
 | Billed > accepted | 5 | `RECEIPT_VARIANCE` → `APPROVED_WITH_SHORT_PAY` |
 | Billed > ordered and over-received | 5 | `OVER_RECEIPT` → `NEEDS_HUMAN_AP_REVIEW` |
 | Damaged packaging | 5 | `RECEIPT_REVIEW` → `NEEDS_HUMAN_AP_REVIEW` |
 | Currency mismatch | 5 | `INSUFFICIENT_EVIDENCE` → `HOLD` |
 | No 861 receipt | 5 | `WAIT_RECEIPT` → `HOLD` |
 
-Dataset2 totals: invoiced $23,614.20, approved $19,101.30, blocked $529.80, held $3,983.10.
+Dataset2 totals: invoiced $23,614.20, approved $19,106.30, blocked $524.80, held $3,983.10.
 
 **DATASET 3 flagged lines**
 

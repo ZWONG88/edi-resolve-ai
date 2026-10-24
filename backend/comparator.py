@@ -234,8 +234,21 @@ def compare(
         # Never approve more than the invoice header asks for.
         approved_total = min(sum((ln.approved_amount.amount for ln in lines), ZERO),
                              invoiced_total)
-        blocked_total = invoiced_total - approved_total
         waived_total = sum((ln.waived_amount.amount for ln in lines if ln.waived_amount), ZERO)
+        # Rule 4.1 also covers the header: a total slightly above its lines is waived
+        # (team decision); the invoice_total variance finding above stays recorded.
+        header_excess = invoiced_total - sum((ln.invoiced_amount.amount for ln in lines), ZERO)
+        if ZERO < header_excess <= policy.de_minimis_line_tolerance.amount:
+            approved_total = min(approved_total + header_excess, invoiced_total)
+            waived_total += header_excess
+            header.append(Finding(
+                finding_id=run.next_id(), check="invoice_total_de_minimis",
+                rule_id="R_TOLERANCE_CHECK", status=PASSED, result_state=None,
+                message=f"Invoice total is ${header_excess} above the sum of its lines; within "
+                f"the ${policy.de_minimis_line_tolerance} de minimis tolerance: "
+                "DE_MINIMIS_PASSED (variance still recorded).",
+                evidence_ids=["inv.total_amount"]))
+        blocked_total = invoiced_total - approved_total
     disposition = dispo.classify(overall, mode, blocked_total,
                                  policy.high_value_hold_threshold.amount)
     return CaseResult(

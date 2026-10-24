@@ -41,14 +41,15 @@ def test_dataset2_categories(conn) -> None:
     summary = load(conn, "dataset2")
     assert summary["counts"] == {"850": 60, "861": 55, "810": 60}
     assert summary["by_disposition"] == {
-        "AUTO_APPROVED": 25, "APPROVED_WITH_SHORT_PAY": 15,
+        "AUTO_APPROVED": 30, "APPROVED_WITH_SHORT_PAY": 10,
         "NEEDS_HUMAN_AP_REVIEW": 10, "HOLD": 10,
     }
     states = Counter((r["state"], r["disposition"]) for r in summary["cases"])
     assert states == Counter({
         ("MATCHED_3WAY", "AUTO_APPROVED"): 20,         # 10 clean + 10 CS/EA normalized
         ("PARTIAL_BILLING", "AUTO_APPROVED"): 5,
-        ("PRICE_VARIANCE", "APPROVED_WITH_SHORT_PAY"): 10,  # 5 overcharges, 5 header +$1
+        ("PRICE_VARIANCE", "APPROVED_WITH_SHORT_PAY"): 5,  # price overcharges
+        ("PRICE_VARIANCE", "AUTO_APPROVED"): 5,            # header +$1.00 waived (4.1)
         ("RECEIPT_VARIANCE", "APPROVED_WITH_SHORT_PAY"): 5,
         ("OVER_RECEIPT", "NEEDS_HUMAN_AP_REVIEW"): 5,
         ("RECEIPT_REVIEW", "NEEDS_HUMAN_AP_REVIEW"): 5,   # damaged packaging
@@ -56,8 +57,8 @@ def test_dataset2_categories(conn) -> None:
         ("WAIT_RECEIPT", "HOLD"): 5,                     # no 861
     })
     totals = {k: Decimal(v) for k, v in summary["totals"].items()}
-    assert totals == {"invoiced": Decimal("23614.20"), "approved": Decimal("19101.30"),
-                      "blocked": Decimal("529.80"), "held": Decimal("3983.10")}
+    assert totals == {"invoiced": Decimal("23614.20"), "approved": Decimal("19106.30"),
+                      "blocked": Decimal("524.80"), "held": Decimal("3983.10")}
 
 
 def test_dataset3_flags_every_seeded_discrepancy(conn) -> None:

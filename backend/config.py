@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     watsonx_url: str = "https://us-south.ml.cloud.ibm.com"
     watsonx_project_id: str | None = None
     ai_timeout_seconds: int = 20      # Provider call timeout before AI_UNAVAILABLE
-    de_minimis_line_tolerance: Decimal = Decimal("1.00")   # rules doc 4.1 (per line, USD)
+    de_minimis_line_tolerance: Decimal = Decimal("1.00")   # rules doc 4.1: per line + header
     high_value_hold_threshold: Decimal = Decimal("500.00")  # rules doc 4.2 (per invoice)
     remittance_dir: str = "data/processed/820"  # Generated (never transmitted) EDI 820 files
 

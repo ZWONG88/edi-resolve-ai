@@ -39,6 +39,10 @@ def build_820(result: CaseResult, invoice: Invoice, case_id: str,
         (ln.blocked_amount.amount for ln in result.line_results if ln.blocked_amount),
         Decimal("0"),
     )
+    header_waived = (result.waived_total.amount if result.waived_total else Decimal("0")) - sum(
+        (ln.waived_amount.amount for ln in result.line_results if ln.waived_amount),
+        Decimal("0"),
+    )
     lines = []
     for ln in result.line_results:
         if ln.invoiced_amount is None:
@@ -71,6 +75,7 @@ def build_820(result: CaseResult, invoice: Invoice, case_id: str,
         "adjustment_amount": fmt_money(blocked),
         "paid_amount": fmt_money(invoiced - blocked),
         "header_adjustment": fmt_money(header_adjustment) if header_adjustment else None,
+        "header_waived": fmt_money(header_waived) if header_waived else None,
         "line_adjustments": lines,
         "case_id": case_id,
         "evidence_version": evidence_version,
