@@ -12,6 +12,7 @@ transmitted) when the disposition allows payment.
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import sqlite3
@@ -31,6 +32,7 @@ from backend.models import (
     AIExplanation,
     AuditEvent,
     CaseResult,
+    CatalogProduct,
     Disposition,
     FindingStatus,
     Invoice,
@@ -1003,6 +1005,47 @@ def review_action(
                                         result, invoice)
     _write_820(prepared)
     return db.get_case(conn, request.case_id)
+
+
+@functools.lru_cache(maxsize=4)
+def _catalog(path: str, _mtime_ns: int) -> dict[reference.CatalogKey, CatalogProduct | None]:
+    return reference.load_master_catalog(path)
+
+
+def catalog_enrichment(
+    conn: sqlite3.Connection, case_id: str, skus: list[str],
+    reference_dir: str | Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Synthetic catalogue context per SKU of a case, for display only.
+
+    Never a rules input (PRD 17.3): catalogue prices and pack sizes do not affect any
+    state, amount or 820. SKUs absent from, or ambiguous in, the catalogue are omitted.
+    """
+    row = conn.execute(
+        "SELECT d.business_key FROM reconciliation_cases c JOIN ingested_documents d"
+        " ON d.id = c.invoice_id WHERE c.id = ?", (case_id,),
+    ).fetchone()
+    path = Path(reference_dir or reference.REFERENCE_DIR) / reference.CATALOG_FILE
+    if row is None or not row["business_key"] or not path.exists():
+        return {}
+    buyer_id, supplier_id = row["business_key"].split("|")[:2]
+    catalog = _catalog(str(path), path.stat().st_mtime_ns)
+    found: dict[str, dict[str, Any]] = {}
+    for sku in dict.fromkeys(skus):
+        product = reference.lookup_catalog_product(catalog, buyer_id, supplier_id, sku)
+        if product is None:
+            continue
+        found[sku] = {
+            "product_name": product.product_name,
+            "master_uom": product.master_uom,
+            "pack_size": product.pack_size,
+            "pack_size_synthetic": (product.pack_size_origin or "").startswith("synthetic"),
+            "vendor_skus": product.vendor_skus,
+            "prices": [{"currency": p.currency, "uom": p.unit_of_measure,
+                        "unit_price": str(p.unit_price), "synthetic": p.selection.is_synthetic}
+                       for p in product.price_records],
+        }
+    return found
 
 
 def case_detail(conn: sqlite3.Connection, case_id: str) -> dict[str, Any]:
