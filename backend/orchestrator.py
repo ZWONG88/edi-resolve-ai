@@ -42,6 +42,7 @@ from backend.models import (
     ReviewRequest,
     ReviewStatus,
 )
+from backend.money import fmt_money
 from backend.receipts import ReceiptLedger, build_ledger
 
 Source = str | Path | bytes
@@ -138,13 +139,55 @@ def dataset_folders(root: str | Path) -> list[Path]:
             if folder.is_dir() and any(_is_team_file(f) for f in folder.glob("*.json"))]
 
 
-def reset_demo_data(conn: sqlite3.Connection) -> None:
-    """Clear the local demo database (Upload page demo tools)."""
+def reset_test_data(conn: sqlite3.Connection, actor: str = "analyst") -> dict[str, int]:
+    """Delete test/sample data (sandbox=1) only; real cases and their history are kept.
+
+    A sandbox document that a real case still depends on (its PO or invoice, or an 861
+    for that PO) is kept. The reset itself is recorded as a TEST_DATA_RESET audit event.
+    """
+    cases = [r["id"] for r in conn.execute(
+        "SELECT id FROM reconciliation_cases WHERE sandbox = 1")]
+    kept = {r[0] for r in conn.execute(
+        """SELECT d.id FROM ingested_documents d JOIN reconciliation_cases c
+           ON c.sandbox = 0 AND d.id IN (c.po_id, c.invoice_id)
+           UNION SELECT r.id FROM ingested_documents r JOIN ingested_documents p
+           ON r.doc_type = '861' AND r.business_key = p.business_key
+           JOIN reconciliation_cases c ON c.sandbox = 0 AND c.po_id = p.id""")}
+    sandbox_docs = [r["id"] for r in conn.execute(
+        "SELECT id FROM ingested_documents WHERE sandbox = 1")]
+    docs = [d for d in sandbox_docs if d not in kept]
+    gone = set(docs)
+    orphan_events = []
+    for row in conn.execute("SELECT id, doc_hashes FROM audit_events WHERE case_id IS NULL"):
+        keys = set(json.loads(row["doc_hashes"] or "{}"))
+        if keys and keys <= gone:
+            orphan_events.append(row["id"])
+    files = [Path(r["file_path"]) for r in conn.execute(
+        "SELECT r.file_path FROM remittances r JOIN reconciliation_cases c"
+        " ON c.id = r.case_id WHERE c.sandbox = 1") if r["file_path"]]
+
+    def delete(table: str, column: str, ids: list[str]) -> int:
+        total = 0
+        for start in range(0, len(ids), 500):
+            chunk = ids[start:start + 500]
+            total += conn.execute(f"DELETE FROM {table} WHERE {column} IN "
+                                  f"({','.join('?' * len(chunk))})", chunk).rowcount
+        return total
+
     with db.transaction(conn):
-        for table in ("review_records", "audit_events", "ai_explanations", "remittances",
-                      "receipt_allocations", "allocations", "case_findings",
-                      "reconciliation_cases", "ingested_documents"):
-            conn.execute(f"DELETE FROM {table}")
+        for table in ("review_records", "ai_explanations", "remittances",
+                      "receipt_allocations", "allocations", "case_findings"):
+            delete(table, "case_id", cases)
+        events = delete("audit_events", "case_id", cases)
+        events += delete("audit_events", "id", orphan_events)
+        counts = {"cases": delete("reconciliation_cases", "id", cases),
+                  "documents": delete("ingested_documents", "id", docs),
+                  "audit_events": events, "documents_kept": len(sandbox_docs) - len(docs)}
+        _audit(conn, event_type="TEST_DATA_RESET", actor=actor, calculations=counts,
+               reason="Cleared test/sample data; real cases and their history kept.")
+    for path in files:
+        path.unlink(missing_ok=True)
+    return counts
 
 
 # ----------------------------------------------------------------- documents
@@ -183,15 +226,16 @@ def _insert_document(
     partner: str | None,
     status: str,
     errors: str | None = None,
+    sandbox: bool = False,
 ) -> str:
     doc_id = db.new_id(f"DOC{doc_type}")
     conn.execute(
         """INSERT INTO ingested_documents (id, doc_type, original_bytes, content_hash,
            business_key, ingested_at, tenant, trading_partner, parser_version,
-           validation_status, validation_errors)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           validation_status, validation_errors, sandbox)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (doc_id, doc_type, data, parser.content_hash(data), business_key, db.utc_now(),
-         "default", partner, parser.PARSER_VERSION, status, errors),
+         "default", partner, parser.PARSER_VERSION, status, errors, int(sandbox)),
     )
     return doc_id
 
@@ -205,6 +249,7 @@ def _insert_case(
     reference_version: str | None = None,
     policy_version: str | None = None,
     mode: str = "2way",
+    sandbox: bool = False,
 ) -> str:
     case_id = db.new_id("CASE")
     now = db.utc_now()
@@ -212,10 +257,10 @@ def _insert_case(
     conn.execute(
         """INSERT INTO reconciliation_cases (id, po_id, invoice_id, status, review_status,
            mode, created_at, updated_at, evidence_version, version, reference_version,
-           policy_version, result_json, disposition_status)
-           VALUES (?, ?, ?, ?, 'OPEN', ?, ?, ?, 1, 1, ?, ?, ?, ?)""",
+           policy_version, result_json, disposition_status, sandbox)
+           VALUES (?, ?, ?, ?, 'OPEN', ?, ?, ?, 1, 1, ?, ?, ?, ?, ?)""",
         (case_id, po_id, invoice_id, status, mode, now, now, reference_version,
-         policy_version, _dumps(result), disposition.value),
+         policy_version, _dumps(result), disposition.value, int(sandbox)),
     )
     return case_id
 
@@ -334,16 +379,18 @@ def _write_820(prepared: tuple[dict[str, Any], Path] | None) -> None:
 
 
 def _quarantine(
-    conn: sqlite3.Connection, doc_type: str, data: bytes, err: ParseError, actor: str
+    conn: sqlite3.Connection, doc_type: str, data: bytes, err: ParseError, actor: str,
+    sandbox: bool = False,
 ) -> IngestOutcome:
     error = {"field": err.field_name, "message": err.message, "raw_value": repr(err.raw_value)}
     with db.transaction(conn):
-        doc_id = _insert_document(conn, doc_type, data, None, None, "QUARANTINED", _dumps(error))
+        doc_id = _insert_document(conn, doc_type, data, None, None, "QUARANTINED", _dumps(error),
+                                  sandbox)
         case_id = _insert_case(
             conn, FindingStatus.QUARANTINED.value,
             doc_id if doc_type == "850" else None,
             doc_id if doc_type != "850" else None,
-            {"overall_status": "QUARANTINED", "error": error},
+            {"overall_status": "QUARANTINED", "error": error}, sandbox=sandbox,
         )
         _audit(conn, case_id=case_id, event_type="VALIDATION_FAILED", actor=actor,
                after_state="QUARANTINED", doc_hashes={doc_type: parser.content_hash(data)},
@@ -360,26 +407,28 @@ def _case_for_invoice(conn: sqlite3.Connection, invoice_doc_id: str) -> sqlite3.
     ).fetchone()
 
 
-def _ingest_po(conn: sqlite3.Connection, data: bytes, actor: str) -> IngestOutcome | None:
+def _ingest_po(conn: sqlite3.Connection, data: bytes, actor: str,
+               sandbox: bool = False) -> IngestOutcome | None:
     """Store a PO. Returns an outcome only when it becomes its own case (an error)."""
     try:
         po = parser.parse_po(data)
     except ParseError as err:
-        return _quarantine(conn, "850", data, err, actor)
+        return _quarantine(conn, "850", data, err, actor, sandbox)
     if _find_by_hash(conn, "850", po.content_hash) is not None:
         return None  # replay of a stored PO
     if (other := _find_by_key(conn, "850", _business_key(po))) is not None:
-        return _duplicate_conflict(conn, "850", data, _business_key(po), other, actor)
+        return _duplicate_conflict(conn, "850", data, _business_key(po), other, actor, sandbox)
     with db.transaction(conn):
         po_doc_id = _insert_document(conn, "850", data, _business_key(po), po.supplier_id,
-                                     "VALID")
+                                     "VALID", sandbox=sandbox)
         _audit(conn, event_type="DOCUMENT_INGESTED", actor=actor, after_state="VALID",
                doc_hashes={po_doc_id: po.content_hash},
                calculations={"doc_type": "850", "parser_version": parser.PARSER_VERSION})
     return None
 
 
-def ingest_receipt(conn: sqlite3.Connection, src: Source, actor: str = "analyst") -> str:
+def ingest_receipt(conn: sqlite3.Connection, src: Source, actor: str = "analyst",
+                   sandbox: bool = False) -> str:
     """Store an 861 for 3-way matching and rerun invoices waiting on it. Returns a note."""
     data = _bytes(src)
     try:
@@ -387,7 +436,8 @@ def ingest_receipt(conn: sqlite3.Connection, src: Source, actor: str = "analyst"
     except ParseError as err:
         with db.transaction(conn):
             _insert_document(conn, "861", data, None, None, "QUARANTINED",
-                             _dumps({"field": err.field_name, "message": err.message}))
+                             _dumps({"field": err.field_name, "message": err.message}),
+                             sandbox)
         return f"861 rejected: {err.field_name} — {err.message}"
     receipt = stored.receipt
     if _find_by_hash(conn, "861", stored.content_hash) is not None:
@@ -395,11 +445,12 @@ def ingest_receipt(conn: sqlite3.Connection, src: Source, actor: str = "analyst"
     if receipt is None or not (receipt.buyer_id and receipt.supplier_id):
         with db.transaction(conn):
             _insert_document(conn, "861", data, None, None, "UNSUPPORTED_PROFILE",
-                             "861 does not fit the supported receipt profile")
+                             "861 does not fit the supported receipt profile", sandbox)
         return "861 stored but not usable: it does not fit the supported receipt profile."
     key = f"{receipt.buyer_id}|{receipt.supplier_id}|{receipt.po_references[0]}"
     with db.transaction(conn):
-        doc_id = _insert_document(conn, "861", data, key, receipt.supplier_id, "VALID")
+        doc_id = _insert_document(conn, "861", data, key, receipt.supplier_id, "VALID",
+                                  sandbox=sandbox)
         _audit(conn, event_type="RECEIPT_INGESTED", actor=actor, after_state="VALID",
                doc_hashes={doc_id: stored.content_hash},
                calculations={"receipt_id": receipt.receipt_id, "po": key})
@@ -427,22 +478,27 @@ def process(
     reference_dir: str | Path | None = None,
     policy: ReconciliationPolicy | None = None,
     actor: str = "analyst",
+    sandbox: bool = False,
 ) -> IngestOutcome:
-    """Ingest an invoice (plus optional PO and 861) and reconcile it."""
+    """Ingest an invoice (plus optional PO and 861) and reconcile it.
+
+    sandbox marks test/sample data that reset_test_data() may delete; uploads of real
+    documents leave it False and are never deleted.
+    """
     notes: list[str] = []
     if po_src is not None:
-        if (bad := _ingest_po(conn, _bytes(po_src), actor)) is not None:
+        if (bad := _ingest_po(conn, _bytes(po_src), actor, sandbox)) is not None:
             return bad
     unsupported_receipt = None
     if receipt_src is not None:
         if get_settings().three_way_enabled:
-            notes.append(ingest_receipt(conn, receipt_src, actor))
+            notes.append(ingest_receipt(conn, receipt_src, actor, sandbox))
         else:
             unsupported_receipt = _bytes(receipt_src)
             notes.append("861 receipt stored but unsupported for reconciliation "
                          "(THREE_WAY_ENABLED=false); receipt check NOT_EVALUATED.")
     return _ingest_invoice(conn, _bytes(invoice_src), reference_dir, policy, actor, notes,
-                           unsupported_receipt)
+                           unsupported_receipt, sandbox)
 
 
 def _ingest_invoice(
@@ -453,11 +509,12 @@ def _ingest_invoice(
     actor: str,
     notes: list[str],
     unsupported_receipt: bytes | None = None,
+    sandbox: bool = False,
 ) -> IngestOutcome:
     try:
         invoice = parser.parse_invoice(inv_bytes)
     except ParseError as err:
-        return _quarantine(conn, "810", inv_bytes, err, actor)
+        return _quarantine(conn, "810", inv_bytes, err, actor, sandbox)
 
     replay = _find_by_hash(conn, "810", invoice.content_hash)
     if replay is not None and (case := _case_for_invoice(conn, replay["id"])) is not None:
@@ -470,11 +527,11 @@ def _ingest_invoice(
                              case["disposition_status"])
     inv_key = _business_key(invoice)
     if (other := _find_by_key(conn, "810", inv_key)) is not None:
-        return _duplicate_conflict(conn, "810", inv_bytes, inv_key, other, actor)
+        return _duplicate_conflict(conn, "810", inv_bytes, inv_key, other, actor, sandbox)
 
     po_row = _find_by_key(conn, "850", _po_key_for(invoice))
     return _reconcile_new(conn, invoice, inv_bytes, po_row, reference_dir, policy, actor,
-                          notes, unsupported_receipt)
+                          notes, unsupported_receipt, sandbox)
 
 
 def _duplicate_conflict(
@@ -484,6 +541,7 @@ def _duplicate_conflict(
     key: str,
     original: sqlite3.Row,
     actor: str,
+    sandbox: bool = False,
 ) -> IngestOutcome:
     original_case = _case_for_invoice(conn, original["id"]) if doc_type == "810" else None
     detail = {"business_key": key, "original_document": original["id"],
@@ -491,11 +549,11 @@ def _duplicate_conflict(
               "original_case": original_case["id"] if original_case else None}
     with db.transaction(conn):
         doc_id = _insert_document(conn, doc_type, data, key, None, "DUPLICATE_CONFLICT",
-                                  _dumps(detail))
+                                  _dumps(detail), sandbox)
         case_id = _insert_case(
             conn, FindingStatus.DUPLICATE_CONFLICT.value, None,
             doc_id if doc_type == "810" else None,
-            {"overall_status": "DUPLICATE_CONFLICT", "conflict": detail},
+            {"overall_status": "DUPLICATE_CONFLICT", "conflict": detail}, sandbox=sandbox,
         )
         _audit(conn, case_id=case_id, event_type="DUPLICATE_CONFLICT", actor=actor,
                after_state="DUPLICATE_CONFLICT",
@@ -593,6 +651,7 @@ def _reconcile_new(
     actor: str,
     notes: list[str],
     unsupported_receipt: bytes | None,
+    sandbox: bool = False,
 ) -> IngestOutcome:
     state, result_dict, result, ref_version, errors = _evaluate(
         conn, invoice, po_row, None, reference_dir, policy
@@ -602,18 +661,19 @@ def _reconcile_new(
     prepared = None
     with db.transaction(conn):
         inv_doc_id = _insert_document(conn, "810", inv_bytes, _business_key(invoice),
-                                      invoice.supplier_id, "VALID")
+                                      invoice.supplier_id, "VALID", sandbox=sandbox)
         hashes = {inv_doc_id: invoice.content_hash}
         if po_row is not None:
             hashes[po_row["id"]] = po_row["content_hash"]
         if unsupported_receipt is not None:
             receipt_id = _insert_document(conn, "861", unsupported_receipt, None,
                                           invoice.supplier_id, "STORED_UNSUPPORTED",
-                                          "Three-way matching disabled; stored only.")
+                                          "Three-way matching disabled; stored only.",
+                                          sandbox)
             hashes[receipt_id] = parser.content_hash(unsupported_receipt)
         case_id = _insert_case(conn, state, po_row["id"] if po_row else None, inv_doc_id,
                                result_dict, ref_version, policy_version,
-                               result.mode if result else "2way")
+                               result.mode if result else "2way", sandbox)
         _audit(conn, case_id=case_id, event_type="DOCUMENT_INGESTED", actor=actor,
                after_state="VALID", doc_hashes=hashes,
                calculations={"parser_version": parser.PARSER_VERSION, "notes": notes})
@@ -657,6 +717,7 @@ def import_dataset(
     folder: str | Path,
     reference_dir: str | Path | None = None,
     actor: str = "analyst",
+    sandbox: bool = False,
 ) -> dict[str, Any]:
     """Import every 850/861/810 in a folder (POs and receipts first) and reconcile."""
     docs: dict[str, list[bytes]] = {"850": [], "861": [], "810": []}
@@ -673,11 +734,12 @@ def import_dataset(
             skipped.append(f"{path.name}: {err}")
     outcomes: list[IngestOutcome] = []
     for data in docs["850"]:
-        if (bad := _ingest_po(conn, data, actor)) is not None:
+        if (bad := _ingest_po(conn, data, actor, sandbox)) is not None:
             outcomes.append(bad)
-    receipt_notes = [ingest_receipt(conn, data, actor) for data in docs["861"]]
+    receipt_notes = [ingest_receipt(conn, data, actor, sandbox) for data in docs["861"]]
     for data in docs["810"]:
-        outcomes.append(_ingest_invoice(conn, data, reference_dir, None, actor, []))
+        outcomes.append(_ingest_invoice(conn, data, reference_dir, None, actor, [], None,
+                                        sandbox))
     return summarize(conn, outcomes, counts={k: len(v) for k, v in docs.items()},
                      skipped=skipped, receipt_notes=receipt_notes)
 
@@ -703,7 +765,7 @@ def summarize(conn: sqlite3.Connection, outcomes: list[IngestOutcome],
         if case["approved_amount"] is None and case["invoiced_amount"] is not None:
             totals["held"] += Decimal(case["invoiced_amount"])
     return {"cases": rows, "by_disposition": by_disposition,
-            "totals": {k: str(v) for k, v in totals.items()}, **extra}
+            "totals": {k: fmt_money(v) for k, v in totals.items()}, **extra}
 
 
 # --------------------------------------------------------------------- rerun
@@ -721,6 +783,12 @@ def rerun_case(
     case = db.get_case(conn, case_id)
     if case is None or case["invoice_id"] is None:
         raise ReviewValidationError("case has no invoice to rerun")
+    if case["status"] == FindingStatus.QUARANTINED.value:
+        raise ReviewValidationError("Quarantined document cannot be rerun; upload a corrected "
+                                    "file as a new document.")
+    if case["status"] == FindingStatus.DUPLICATE_CONFLICT.value:
+        raise ReviewValidationError("Duplicate conflict: rerun the original case with the "
+                                    "corrected invoice instead.")
     old_doc = db.get_document(conn, case["invoice_id"])
     inv_bytes = _bytes(corrected_invoice_src) if corrected_invoice_src else bytes(
         old_doc["original_bytes"]
@@ -737,7 +805,8 @@ def rerun_case(
         if corrected_invoice_src is not None:
             inv_doc_id = _insert_document(conn, "810", inv_bytes, _business_key(invoice),
                                           invoice.supplier_id, "VALID_REVISION",
-                                          f"supersedes {case['invoice_id']}")
+                                          f"supersedes {case['invoice_id']}",
+                                          bool(case["sandbox"]))
         disposition = result.disposition.value if result else result_dict.get("disposition")
         conn.execute(
             """UPDATE reconciliation_cases SET status = ?, po_id = ?, invoice_id = ?,
@@ -843,14 +912,18 @@ def review_action(
     """Record approve / reject / escalate atomically with its audit event and record.
 
     ReviewRequest already guarantees a non-empty reason and an owner for ESCALATE.
-    Approving a NEEDS_HUMAN_AP_REVIEW invoice also generates its short-pay 820.
+    Rejecting or escalating voids a live 820; approving a payable invoice with no live
+    820 (NEEDS_HUMAN_AP_REVIEW, or one rejected earlier) generates it.
     Raises ReviewValidationError, StaleVersionError or AuditPersistenceError; on any
     error nothing is committed.
     """
     key = request.idempotency_key or uuid.uuid4().hex
-    if db.audit_key_exists(conn, key):
-        return db.get_case(conn, request.case_id)  # retry of an already-committed action
     action = request.action
+    if (prior := db.get_audit_event_by_key(conn, key)) is not None:
+        if (prior["case_id"], prior["event_type"]) != (request.case_id,
+                                                       f"HUMAN_{action.value}"):
+            raise ReviewValidationError("Idempotency key already used for a different action.")
+        return db.get_case(conn, request.case_id)  # retry of an already-committed action
     owner = (request.escalation_owner or "").strip()
     if action == ReviewActionType.ESCALATE and owner.lower() not in ESCALATION_OWNERS:
         raise ReviewValidationError(
@@ -911,8 +984,17 @@ def review_action(
             escalation_owner=owner or None, utc_timestamp=datetime.now(timezone.utc),
             audit_event_id=event_id,
         ))
-        if (action == ReviewActionType.APPROVE
-                and case["disposition_status"] == Disposition.NEEDS_HUMAN_AP_REVIEW.value):
+        live = current_remittance(conn, request.case_id)
+        if action != ReviewActionType.APPROVE and live is not None:
+            conn.execute("UPDATE remittances SET status = 'SUPERSEDED' WHERE id = ?",
+                         (live["id"],))
+            _audit(conn, case_id=request.case_id, event_type="REMITTANCE_820_VOIDED",
+                   actor=actor, reason=reason,
+                   calculations={"remittance_id": live["id"], "file": live["file_path"],
+                                 "transmitted": False})
+        payable = {d.value for d in remittance.PAYABLE}
+        if (action == ReviewActionType.APPROVE and live is None
+                and case["disposition_status"] in payable):
             result = CaseResult.model_validate(json.loads(case["result_json"]))
             doc = db.get_document(conn, case["invoice_id"])
             invoice = parser.parse_invoice(bytes(doc["original_bytes"]))

@@ -34,6 +34,10 @@ The app runs fully offline with a rules-based AI mock (`AI_PROVIDER=mock`). Open
 - **Dataset 1:** a clean 50-line PO. It auto-approves.
 - **Dataset2:** 60 invoices that cover every rule.
 - **DATASET 3:** a 50-line PO with seeded discrepancies.
+- **DATASET 4:** a 50-line PO with shortages, rejected goods, an extension error, a header
+  overbill and an over-receipt. It needs AP review, with $316.16 blocked.
+- **Dataset5:** a 50-line PO with a swapped receipt SKU, a missing CS→EA conversion and a
+  $45 shipping charge. It is held, with $29,138.16 not evaluated.
 
 Then open **Exception Review** to see the highlighted lines, suggested corrections and the
 820 download.

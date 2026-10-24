@@ -182,6 +182,10 @@ _ADDED_COLUMNS = {
         "invoiced_amount": "TEXT",
         "approved_amount": "TEXT",
         "blocked_amount": "TEXT",
+        "sandbox": "INTEGER NOT NULL DEFAULT 0",  # test/sample data; reset may delete it
+    },
+    "ingested_documents": {
+        "sandbox": "INTEGER NOT NULL DEFAULT 0",
     },
 }
 
@@ -258,9 +262,9 @@ def list_review_records(conn: sqlite3.Connection, case_id: str) -> list[sqlite3.
     ).fetchall()
 
 
-def audit_key_exists(conn: sqlite3.Connection, key: str) -> bool:
-    row = conn.execute("SELECT 1 FROM audit_events WHERE idempotency_key = ?", (key,)).fetchone()
-    return row is not None
+def get_audit_event_by_key(conn: sqlite3.Connection, key: str) -> sqlite3.Row | None:
+    return conn.execute("SELECT * FROM audit_events WHERE idempotency_key = ?",
+                        (key,)).fetchone()
 
 
 def get_case(conn: sqlite3.Connection, case_id: str) -> sqlite3.Row | None:

@@ -1,0 +1,530 @@
+{
+  "transaction_type": "850",
+  "x12_version": "004010",
+  "po_number": "PO-10004",
+  "po_date": "2026-10-23",
+  "requested_delivery_date": "2026-12-01",
+  "department": "004",
+  "buyer": {
+    "id": "BUYER001",
+    "name": "DEMO RETAILER"
+  },
+  "supplier": {
+    "id": "SUP004",
+    "name": "KITCHEN SUPPLIES CO"
+  },
+  "ship_to": {
+    "id": "DC004",
+    "name": "SOUTH BAY DISTRIBUTION CENTER",
+    "address": {
+      "street": "3000 COMMERCE DRIVE",
+      "city": "SAN JOSE",
+      "state": "CA",
+      "postal_code": "95134",
+      "country": "US"
+    }
+  },
+  "line_items": [
+    {
+      "line_number": 1,
+      "buyer_sku": "SKU4001",
+      "vendor_sku": "VEND4001",
+      "description": "Kitchen Product 1",
+      "quantity": 19,
+      "unit_of_measure": "EA",
+      "unit_price": 6.4,
+      "currency": "USD"
+    },
+    {
+      "line_number": 2,
+      "buyer_sku": "SKU4002",
+      "vendor_sku": "VEND4002",
+      "description": "Kitchen Product 2",
+      "quantity": 28,
+      "unit_of_measure": "EA",
+      "unit_price": 6.66,
+      "currency": "USD"
+    },
+    {
+      "line_number": 3,
+      "buyer_sku": "SKU4003",
+      "vendor_sku": "VEND4003",
+      "description": "Kitchen Product 3",
+      "quantity": 37,
+      "unit_of_measure": "EA",
+      "unit_price": 6.92,
+      "currency": "USD"
+    },
+    {
+      "line_number": 4,
+      "buyer_sku": "SKU4004",
+      "vendor_sku": "VEND4004",
+      "description": "Kitchen Product 4",
+      "quantity": 46,
+      "unit_of_measure": "EA",
+      "unit_price": 7.18,
+      "currency": "USD"
+    },
+    {
+      "line_number": 5,
+      "buyer_sku": "SKU4005",
+      "vendor_sku": "VEND4005",
+      "description": "Kitchen Product 5",
+      "quantity": 55,
+      "unit_of_measure": "EA",
+      "unit_price": 7.44,
+      "currency": "USD"
+    },
+    {
+      "line_number": 6,
+      "buyer_sku": "SKU4006",
+      "vendor_sku": "VEND4006",
+      "description": "Kitchen Product 6",
+      "quantity": 64,
+      "unit_of_measure": "EA",
+      "unit_price": 7.7,
+      "currency": "USD"
+    },
+    {
+      "line_number": 7,
+      "buyer_sku": "SKU4007",
+      "vendor_sku": "VEND4007",
+      "description": "Kitchen Product 7",
+      "quantity": 73,
+      "unit_of_measure": "EA",
+      "unit_price": 7.96,
+      "currency": "USD"
+    },
+    {
+      "line_number": 8,
+      "buyer_sku": "SKU4008",
+      "vendor_sku": "VEND4008",
+      "description": "Kitchen Product 8",
+      "quantity": 12,
+      "unit_of_measure": "EA",
+      "unit_price": 8.22,
+      "currency": "USD"
+    },
+    {
+      "line_number": 9,
+      "buyer_sku": "SKU4009",
+      "vendor_sku": "VEND4009",
+      "description": "Kitchen Product 9",
+      "quantity": 21,
+      "unit_of_measure": "EA",
+      "unit_price": 8.48,
+      "currency": "USD"
+    },
+    {
+      "line_number": 10,
+      "buyer_sku": "SKU4010",
+      "vendor_sku": "VEND4010",
+      "description": "Kitchen Product 10",
+      "quantity": 30,
+      "unit_of_measure": "EA",
+      "unit_price": 8.74,
+      "currency": "USD"
+    },
+    {
+      "line_number": 11,
+      "buyer_sku": "SKU4011",
+      "vendor_sku": "VEND4011",
+      "description": "Kitchen Product 11",
+      "quantity": 39,
+      "unit_of_measure": "EA",
+      "unit_price": 9.0,
+      "currency": "USD"
+    },
+    {
+      "line_number": 12,
+      "buyer_sku": "SKU4012",
+      "vendor_sku": "VEND4012",
+      "description": "Kitchen Product 12",
+      "quantity": 48,
+      "unit_of_measure": "EA",
+      "unit_price": 9.26,
+      "currency": "USD"
+    },
+    {
+      "line_number": 13,
+      "buyer_sku": "SKU4013",
+      "vendor_sku": "VEND4013",
+      "description": "Kitchen Product 13",
+      "quantity": 57,
+      "unit_of_measure": "EA",
+      "unit_price": 9.52,
+      "currency": "USD"
+    },
+    {
+      "line_number": 14,
+      "buyer_sku": "SKU4014",
+      "vendor_sku": "VEND4014",
+      "description": "Kitchen Product 14",
+      "quantity": 66,
+      "unit_of_measure": "EA",
+      "unit_price": 9.78,
+      "currency": "USD"
+    },
+    {
+      "line_number": 15,
+      "buyer_sku": "SKU4015",
+      "vendor_sku": "VEND4015",
+      "description": "Kitchen Product 15",
+      "quantity": 75,
+      "unit_of_measure": "EA",
+      "unit_price": 10.04,
+      "currency": "USD"
+    },
+    {
+      "line_number": 16,
+      "buyer_sku": "SKU4016",
+      "vendor_sku": "VEND4016",
+      "description": "Kitchen Product 16",
+      "quantity": 14,
+      "unit_of_measure": "EA",
+      "unit_price": 10.3,
+      "currency": "USD"
+    },
+    {
+      "line_number": 17,
+      "buyer_sku": "SKU4017",
+      "vendor_sku": "VEND4017",
+      "description": "Kitchen Product 17",
+      "quantity": 23,
+      "unit_of_measure": "EA",
+      "unit_price": 10.56,
+      "currency": "USD"
+    },
+    {
+      "line_number": 18,
+      "buyer_sku": "SKU4018",
+      "vendor_sku": "VEND4018",
+      "description": "Kitchen Product 18",
+      "quantity": 32,
+      "unit_of_measure": "EA",
+      "unit_price": 10.82,
+      "currency": "USD"
+    },
+    {
+      "line_number": 19,
+      "buyer_sku": "SKU4019",
+      "vendor_sku": "VEND4019",
+      "description": "Kitchen Product 19",
+      "quantity": 41,
+      "unit_of_measure": "EA",
+      "unit_price": 11.08,
+      "currency": "USD"
+    },
+    {
+      "line_number": 20,
+      "buyer_sku": "SKU4020",
+      "vendor_sku": "VEND4020",
+      "description": "Kitchen Product 20",
+      "quantity": 50,
+      "unit_of_measure": "EA",
+      "unit_price": 11.34,
+      "currency": "USD"
+    },
+    {
+      "line_number": 21,
+      "buyer_sku": "SKU4021",
+      "vendor_sku": "VEND4021",
+      "description": "Kitchen Product 21",
+      "quantity": 59,
+      "unit_of_measure": "EA",
+      "unit_price": 11.6,
+      "currency": "USD"
+    },
+    {
+      "line_number": 22,
+      "buyer_sku": "SKU4022",
+      "vendor_sku": "VEND4022",
+      "description": "Kitchen Product 22",
+      "quantity": 68,
+      "unit_of_measure": "EA",
+      "unit_price": 11.86,
+      "currency": "USD"
+    },
+    {
+      "line_number": 23,
+      "buyer_sku": "SKU4023",
+      "vendor_sku": "VEND4023",
+      "description": "Kitchen Product 23",
+      "quantity": 77,
+      "unit_of_measure": "EA",
+      "unit_price": 12.12,
+      "currency": "USD"
+    },
+    {
+      "line_number": 24,
+      "buyer_sku": "SKU4024",
+      "vendor_sku": "VEND4024",
+      "description": "Kitchen Product 24",
+      "quantity": 16,
+      "unit_of_measure": "EA",
+      "unit_price": 12.38,
+      "currency": "USD"
+    },
+    {
+      "line_number": 25,
+      "buyer_sku": "SKU4025",
+      "vendor_sku": "VEND4025",
+      "description": "Kitchen Product 25",
+      "quantity": 25,
+      "unit_of_measure": "EA",
+      "unit_price": 12.64,
+      "currency": "USD"
+    },
+    {
+      "line_number": 26,
+      "buyer_sku": "SKU4026",
+      "vendor_sku": "VEND4026",
+      "description": "Kitchen Product 26",
+      "quantity": 34,
+      "unit_of_measure": "EA",
+      "unit_price": 12.9,
+      "currency": "USD"
+    },
+    {
+      "line_number": 27,
+      "buyer_sku": "SKU4027",
+      "vendor_sku": "VEND4027",
+      "description": "Kitchen Product 27",
+      "quantity": 43,
+      "unit_of_measure": "EA",
+      "unit_price": 13.16,
+      "currency": "USD"
+    },
+    {
+      "line_number": 28,
+      "buyer_sku": "SKU4028",
+      "vendor_sku": "VEND4028",
+      "description": "Kitchen Product 28",
+      "quantity": 52,
+      "unit_of_measure": "EA",
+      "unit_price": 13.42,
+      "currency": "USD"
+    },
+    {
+      "line_number": 29,
+      "buyer_sku": "SKU4029",
+      "vendor_sku": "VEND4029",
+      "description": "Kitchen Product 29",
+      "quantity": 61,
+      "unit_of_measure": "EA",
+      "unit_price": 13.68,
+      "currency": "USD"
+    },
+    {
+      "line_number": 30,
+      "buyer_sku": "SKU4030",
+      "vendor_sku": "VEND4030",
+      "description": "Kitchen Product 30",
+      "quantity": 70,
+      "unit_of_measure": "EA",
+      "unit_price": 13.94,
+      "currency": "USD"
+    },
+    {
+      "line_number": 31,
+      "buyer_sku": "SKU4031",
+      "vendor_sku": "VEND4031",
+      "description": "Kitchen Product 31",
+      "quantity": 79,
+      "unit_of_measure": "EA",
+      "unit_price": 14.2,
+      "currency": "USD"
+    },
+    {
+      "line_number": 32,
+      "buyer_sku": "SKU4032",
+      "vendor_sku": "VEND4032",
+      "description": "Kitchen Product 32",
+      "quantity": 18,
+      "unit_of_measure": "EA",
+      "unit_price": 14.46,
+      "currency": "USD"
+    },
+    {
+      "line_number": 33,
+      "buyer_sku": "SKU4033",
+      "vendor_sku": "VEND4033",
+      "description": "Kitchen Product 33",
+      "quantity": 27,
+      "unit_of_measure": "EA",
+      "unit_price": 14.72,
+      "currency": "USD"
+    },
+    {
+      "line_number": 34,
+      "buyer_sku": "SKU4034",
+      "vendor_sku": "VEND4034",
+      "description": "Kitchen Product 34",
+      "quantity": 36,
+      "unit_of_measure": "EA",
+      "unit_price": 14.98,
+      "currency": "USD"
+    },
+    {
+      "line_number": 35,
+      "buyer_sku": "SKU4035",
+      "vendor_sku": "VEND4035",
+      "description": "Kitchen Product 35",
+      "quantity": 45,
+      "unit_of_measure": "EA",
+      "unit_price": 15.24,
+      "currency": "USD"
+    },
+    {
+      "line_number": 36,
+      "buyer_sku": "SKU4036",
+      "vendor_sku": "VEND4036",
+      "description": "Kitchen Product 36",
+      "quantity": 54,
+      "unit_of_measure": "EA",
+      "unit_price": 15.5,
+      "currency": "USD"
+    },
+    {
+      "line_number": 37,
+      "buyer_sku": "SKU4037",
+      "vendor_sku": "VEND4037",
+      "description": "Kitchen Product 37",
+      "quantity": 63,
+      "unit_of_measure": "EA",
+      "unit_price": 15.76,
+      "currency": "USD"
+    },
+    {
+      "line_number": 38,
+      "buyer_sku": "SKU4038",
+      "vendor_sku": "VEND4038",
+      "description": "Kitchen Product 38",
+      "quantity": 72,
+      "unit_of_measure": "EA",
+      "unit_price": 16.02,
+      "currency": "USD"
+    },
+    {
+      "line_number": 39,
+      "buyer_sku": "SKU4039",
+      "vendor_sku": "VEND4039",
+      "description": "Kitchen Product 39",
+      "quantity": 81,
+      "unit_of_measure": "EA",
+      "unit_price": 16.28,
+      "currency": "USD"
+    },
+    {
+      "line_number": 40,
+      "buyer_sku": "SKU4040",
+      "vendor_sku": "VEND4040",
+      "description": "Kitchen Product 40",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 16.54,
+      "currency": "USD"
+    },
+    {
+      "line_number": 41,
+      "buyer_sku": "SKU4041",
+      "vendor_sku": "VEND4041",
+      "description": "Kitchen Product 41",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 16.8,
+      "currency": "USD"
+    },
+    {
+      "line_number": 42,
+      "buyer_sku": "SKU4042",
+      "vendor_sku": "VEND4042",
+      "description": "Kitchen Product 42",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 17.06,
+      "currency": "USD"
+    },
+    {
+      "line_number": 43,
+      "buyer_sku": "SKU4043",
+      "vendor_sku": "VEND4043",
+      "description": "Kitchen Product 43",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 17.32,
+      "currency": "USD"
+    },
+    {
+      "line_number": 44,
+      "buyer_sku": "SKU4044",
+      "vendor_sku": "VEND4044",
+      "description": "Kitchen Product 44",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 17.58,
+      "currency": "USD"
+    },
+    {
+      "line_number": 45,
+      "buyer_sku": "SKU4045",
+      "vendor_sku": "VEND4045",
+      "description": "Kitchen Product 45",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 17.84,
+      "currency": "USD"
+    },
+    {
+      "line_number": 46,
+      "buyer_sku": "SKU4046",
+      "vendor_sku": "VEND4046",
+      "description": "Kitchen Product 46",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 18.1,
+      "currency": "USD"
+    },
+    {
+      "line_number": 47,
+      "buyer_sku": "SKU4047",
+      "vendor_sku": "VEND4047",
+      "description": "Kitchen Product 47",
+      "quantity": 13,
+      "unit_of_measure": "EA",
+      "unit_price": 18.36,
+      "currency": "USD"
+    },
+    {
+      "line_number": 48,
+      "buyer_sku": "SKU4048",
+      "vendor_sku": "VEND4048",
+      "description": "Kitchen Product 48",
+      "quantity": 22,
+      "unit_of_measure": "EA",
+      "unit_price": 18.62,
+      "currency": "USD"
+    },
+    {
+      "line_number": 49,
+      "buyer_sku": "SKU4049",
+      "vendor_sku": "VEND4049",
+      "description": "Kitchen Product 49",
+      "quantity": 31,
+      "unit_of_measure": "EA",
+      "unit_price": 18.88,
+      "currency": "USD"
+    },
+    {
+      "line_number": 50,
+      "buyer_sku": "SKU4050",
+      "vendor_sku": "VEND4050",
+      "description": "Kitchen Product 50",
+      "quantity": 40,
+      "unit_of_measure": "EA",
+      "unit_price": 19.14,
+      "currency": "USD"
+    }
+  ],
+  "total_line_items": 50
+}
