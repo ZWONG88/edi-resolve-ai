@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from streamlit.testing.v1 import AppTest
 
 import ui_shared
+from backend import ai_resolver, db, orchestrator
+from backend.exceptions import AuditPersistenceError
 
 
 @pytest.fixture(autouse=True)
@@ -109,3 +113,45 @@ def test_app_entry_renders() -> None:
     """The real entry point (st.navigation + st.logo) must load, not just the pages."""
     app = AppTest.from_file("../app.py", default_timeout=30).run()
     assert not app.exception
+
+
+def _review_with_at04() -> AppTest:
+    up = AppTest.from_file("../pages/upload.py", default_timeout=30).run()
+    up.radio[0].set_value("Sample scenario").run()
+    up.selectbox[0].set_value("AT04 · Price variance $2.00 vs $2.10").run()
+    up.button[0].click().run()
+    return AppTest.from_file("../pages/review.py", default_timeout=30).run()
+
+
+def test_ai_audit_failure_shows_action_not_saved(monkeypatch) -> None:
+    """Project rule: an audit-write failure shows "Action not saved", never a crash."""
+    review = _review_with_at04()
+    real = db.write_audit_event
+
+    def failing(conn, event):
+        if event.actor == "ai-resolver":
+            raise AuditPersistenceError("disk full")
+        return real(conn, event)
+
+    monkeypatch.setattr(db, "write_audit_event", failing)
+    next(b for b in review.button if b.label == "Get AI suggestion").click().run()
+    assert not review.exception
+    assert any(e.value == orchestrator.ACTION_NOT_SAVED for e in review.error)
+    assert ui_shared.get_conn().execute("SELECT COUNT(*) FROM ai_explanations").fetchone()[0] == 0
+
+
+def test_ai_timeout_shows_unavailable_and_keeps_review(monkeypatch) -> None:
+    """A slow provider times out to AI_UNAVAILABLE; the page and findings stay usable."""
+    monkeypatch.setenv("AI_PROVIDER", "watsonx")
+    monkeypatch.setenv("AI_TIMEOUT_SECONDS", "1")
+
+    def slow(system: str, user: str) -> str:
+        time.sleep(3)
+        return "{}"
+
+    monkeypatch.setattr(ai_resolver, "watsonx_generate", slow)
+    review = _review_with_at04()
+    next(b for b in review.button if b.label == "Get AI suggestion").click().run()
+    assert not review.exception
+    assert any("AI_UNAVAILABLE" in w.value and "timeout" in w.value for w in review.warning)
+    assert any("Discrepancies" in s.value for s in review.subheader)

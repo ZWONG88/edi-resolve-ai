@@ -10,7 +10,7 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **174 passed**, 0 failed, 1 deselected (live watsonx integration test); Streamlit 1.66.1 (minimum 1.48) |
+| Full `pytest` | **177 passed**, 0 failed, 1 deselected (live watsonx integration test); Streamlit 1.66.1 (minimum 1.48) |
 | E2E journeys / ingestion / edge cases (`tests/test_e2e_*.py`) | **21 passed** (bugs B1–B6 fixed) |
 | `pytest --cov=backend` | **94%** overall; lowest are ai_resolver 82% (live watsonx path), parser 88% |
 | AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
