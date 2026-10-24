@@ -59,3 +59,16 @@ def test_dataset_import_flow(monkeypatch) -> None:
     review.text_area[0].input("Short pay per suggested corrections").run()
     next(b for b in review.button if "Submit" in str(b.label)).click().run()
     assert any(s.value == "EDI 820 remittance" for s in review.subheader)
+
+
+def test_reset_clears_sample_cases() -> None:
+    up = AppTest.from_file("../pages/upload.py", default_timeout=30).run()
+    up.radio[0].set_value("Sample scenario").run()
+    up.selectbox[0].set_value("AT04 · Price variance $2.00 vs $2.10").run()
+    up.button[0].click().run()
+    up.checkbox[0].check().run()
+    next(b for b in up.button if b.label == "Reset test data").click().run()
+    assert not up.exception
+    assert any("Test data cleared: 1 case(s)" in s.value for s in up.success)
+    assert ui_shared.get_conn().execute("SELECT COUNT(*) FROM reconciliation_cases"
+                                        ).fetchone()[0] == 0

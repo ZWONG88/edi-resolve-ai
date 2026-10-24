@@ -68,7 +68,7 @@ if source == "Import dataset folder":
         if st.button("Import & reconcile", type="primary"):
             try:
                 with st.spinner("Importing documents and running 3-way checks..."):
-                    summary = orchestrator.import_dataset(conn, folder)
+                    summary = orchestrator.import_dataset(conn, folder, sandbox=True)
             except AuditPersistenceError:
                 st.error(orchestrator.ACTION_NOT_SAVED)
             except Exception as exc:  # noqa: BLE001 - never show a traceback to the analyst
@@ -104,7 +104,8 @@ else:
     if st.button("Process", type="primary", disabled=inv_bytes is None):
         try:
             with st.spinner("Parsing and running deterministic checks..."):
-                out = orchestrator.process(conn, inv_bytes, po_bytes, receipt_bytes)
+                out = orchestrator.process(conn, inv_bytes, po_bytes, receipt_bytes,
+                                           sandbox=source == "Sample scenario")
         except AuditPersistenceError:
             st.error(orchestrator.ACTION_NOT_SAVED)
         except Exception as exc:  # noqa: BLE001 - never show a traceback to the analyst
@@ -129,10 +130,16 @@ if st.session_state.get("selected_case"):
         st.switch_page("pages/review.py")
 
 with st.expander("Demo tools"):
-    st.caption("Clears every case, document and audit event in the local demo database.")
-    confirm = st.checkbox("I understand this deletes all local demo data")
-    if st.button("Reset demo database", disabled=not confirm):
-        orchestrator.reset_demo_data(conn)
-        st.session_state.pop("selected_case", None)
-        st.session_state.pop("last_import", None)
-        st.success("Demo database cleared.")
+    st.caption("Clears test/sample cases only (sample scenarios and dataset-folder imports). "
+               "Uploaded (real) cases and their audit history are kept.")
+    confirm = st.checkbox("I understand this deletes all test/sample data")
+    if st.button("Reset test data", disabled=not confirm):
+        try:
+            counts = orchestrator.reset_test_data(conn)
+        except AuditPersistenceError:
+            st.error(orchestrator.ACTION_NOT_SAVED)
+        else:
+            st.session_state.pop("selected_case", None)
+            st.session_state.pop("last_import", None)
+            st.success(f"Test data cleared: {counts['cases']} case(s), "
+                       f"{counts['documents']} document(s) removed; real cases kept.")

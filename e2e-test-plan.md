@@ -12,7 +12,7 @@ tests currently do not.
 
 ## Status (2026-10-24): executed
 
-**Result:** 160 passed, 3 xfailed (strict, known bugs), 1 deselected. Coverage `backend/` is 94%, and every module is at 82% or more. `ruff` is clean.
+**Result:** 168 passed, 1 deselected (after fixing B1–B6). Coverage `backend/` is 94%, and every module is at 82% or more. `ruff` is clean.
 Run it with `.venv/bin/python -m pytest` (`pytest-cov` is installed in `.venv`).
 
 | Task | Outcome |
@@ -35,7 +35,7 @@ Run it with `.venv/bin/python -m pytest` (`pytest-cov` is installed in `.venv`).
 - The 820 payload carries `"status": "GENERATED_NOT_TRANSMITTED"`. `"transmitted": false` is in the audit event's `calculations_json`.
 - `db.list_findings()` defaults to the current evidence version. Pass `evidence_version` to get history.
 
-**Bugs found:** B1–B6, listed in `docs/test_results.md` under "E2E audit: known issues".
+**Bugs found:** B1–B6, all fixed. See `docs/test_results.md`, "E2E audit: issues found and fixed".
 
 | Module | Coverage | Module | Coverage |
 |---|---|---|---|

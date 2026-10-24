@@ -22,3 +22,17 @@ def test_transaction_rolls_back_on_audit_failure(conn) -> None:
                                                   correlation_key="k1"))
     types = [r["event_type"] for r in db.list_audit_events(conn)]
     assert types == ["X"]
+
+
+def test_init_db_adds_sandbox_column_to_old_databases(db_file) -> None:
+    """B4 migration: rows from before the sandbox flag default to real (0), never reset."""
+    old = db.connect(db_file)
+    old.executescript(db.SCHEMA)  # first-release schema has no sandbox columns
+    old.execute("INSERT INTO reconciliation_cases (id, status, created_at, updated_at)"
+                " VALUES ('CASE-old', 'MATCHED_2WAY', 'now', 'now')")
+    old.commit()
+    old.close()
+    conn = db.init_db(db_file)
+    for table in ("reconciliation_cases", "ingested_documents"):
+        assert "sandbox" in {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+    assert db.get_case(conn, "CASE-old")["sandbox"] == 0

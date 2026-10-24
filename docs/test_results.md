@@ -10,8 +10,8 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **160 passed**, 0 failed, 3 xfailed (known bugs B1, B2, B5), 1 deselected (live watsonx integration test) |
-| E2E journeys / ingestion / edge cases (`tests/test_e2e_*.py`) | **15 passed**, 3 xfailed (strict) |
+| Full `pytest` | **168 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| E2E journeys / ingestion / edge cases (`tests/test_e2e_*.py`) | **21 passed** (bugs B1–B6 fixed) |
 | `pytest --cov=backend` | **94%** overall; lowest are ai_resolver 82% (live watsonx path), parser 88% |
 | AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
 | AT25–AT35 three-way (`tests/test_three_way.py`) | **AT25–AT32, AT34, AT35 passed**. AT33 and AT36 are not implemented. |
@@ -168,13 +168,13 @@ Results are reported per category so that easy matches can't hide misses.
 | 5 | 40 | Receipt in CS, no CS→EA conversion | `INSUFFICIENT_EVIDENCE` |
 | 5 | header | $45.00 shipping | totals `NOT_EVALUATED` → `HOLD` (rules doc) |
 
-## E2E audit: known issues (2026-10-24)
+## E2E audit: issues found and fixed (2026-10-24)
 
-| # | Issue | Test |
-|---|---|---|
-| B1 | Rejecting an `AUTO_APPROVED` case leaves its 820 `GENERATED_NOT_TRANSMITTED` | xfail `test_reject_auto_approved_supersedes_820` |
-| B2 | `rerun_case` on a quarantined case raises `ParseError`, not `ReviewValidationError` (UI catches it) | xfail `test_rerun_quarantined_raises_review_validation_error` |
-| B3 | Rerunning a `DUPLICATE_CONFLICT` case reconciles the conflicting invoice and lifts the hold (no over-allocation) | `test_rerun_duplicate_conflict_does_not_double_allocate`; intended behaviour is open |
-| B4 | `reset_demo_data` deletes `audit_events` (PRD 20.2 append-only) | demo-only; decision open |
-| B5 | `summarize()` money totals not formatted to cents (`"23614.2"`) | xfail `test_summarize_totals_two_decimals` |
-| B6 | Reused idempotency key with a different action is a silent no-op | decision open |
+| # | Issue | Fix | Test |
+|---|---|---|---|
+| B1 | Rejecting an `AUTO_APPROVED` case left its 820 live | REJECT/ESCALATE voids the live 820 (`REMITTANCE_820_VOIDED` event); a later APPROVE regenerates it | `test_reject_voids_820_and_reapproval_restores_it`, `test_escalate_voids_820` |
+| B2 | `rerun_case` on a quarantined case raised `ParseError` | Raises `ReviewValidationError`; the Review page shows it | `test_rerun_quarantined_raises_review_validation_error` |
+| B3 | Rerunning a `DUPLICATE_CONFLICT` case lifted the hold | Refused with `ReviewValidationError`; the conflict stays held | `test_rerun_duplicate_conflict_refused` |
+| B4 | Demo reset deleted every case and audit event (PRD 20.2) | `reset_test_data` deletes only `sandbox` data (sample scenarios, dataset-folder imports); uploaded cases, their history and any sandbox doc a real case uses are kept; the reset is audited (`TEST_DATA_RESET`) | `test_reset_deletes_only_test_data`, `test_reset_clears_sample_cases`, `test_init_db_adds_sandbox_column_to_old_databases` |
+| B5 | `summarize()` totals not formatted to cents | Totals use `fmt_money` | `test_summarize_totals_two_decimals` |
+| B6 | Reused idempotency key with a different action was a silent no-op | Raises `ReviewValidationError` unless the case and action match | `test_idempotency_key_reused_for_other_action_refused` |

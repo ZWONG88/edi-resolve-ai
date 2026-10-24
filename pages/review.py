@@ -295,6 +295,8 @@ if case["invoice_id"]:
                                            corrected.getvalue() if corrected else None)
             except ParseError as exc:
                 st.error(f"Upload failed: {exc.field_name} — {exc.message}")
+            except ReviewValidationError as exc:
+                st.error(str(exc))
             except AuditPersistenceError:
                 st.error(orchestrator.ACTION_NOT_SAVED)
             else:
