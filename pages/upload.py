@@ -20,13 +20,16 @@ from ui_shared import (
 
 mode_banner()
 st.title("Upload & Process")
+st.caption("STEP 1 · INGESTION")
 st.caption("Load EDI 850 purchase orders, 861 receiving advice and 810 invoices. Deterministic "
            "rules run first; AI explanations are requested later, on demand.")
 
 conn = get_conn()
 three_way = get_settings().three_way_enabled
-source = st.radio("Source", ["Import dataset folder", "Upload files", "Sample scenario"],
-                  horizontal=True)
+with st.container(border=True):
+    st.subheader("Transaction documents")
+    source = st.radio("Source", ["Import dataset folder", "Upload files", "Sample scenario"],
+                      horizontal=True)
 
 
 def show_summary(summary: dict) -> None:
@@ -60,8 +63,10 @@ if source == "Import dataset folder":
                 "EDI JSON files (850, 861, 810).")
     else:
         by_name = {f.name: f for f in folders}
-        folder = by_name[st.selectbox("Dataset folder (data/raw/…)", list(by_name))]
-        st.caption(", ".join(f.name for f in sorted(folder.glob("*.json"))))
+        with st.container(border=True):
+            st.markdown("**EDI dataset folder**")
+            folder = by_name[st.selectbox("Dataset folder (data/raw/…)", list(by_name))]
+            st.caption(", ".join(f.name for f in sorted(folder.glob("*.json"))))
         if not three_way:
             st.info("THREE_WAY_ENABLED=false: invoices are matched two-way only; no "
                     "auto-approval or 820 generation.")
@@ -84,18 +89,36 @@ else:
     if source == "Sample scenario":
         label = st.selectbox("Scenario", list(SCENARIOS))
         po_file, inv_file, receipt_file = SCENARIOS[label]
-        st.caption(f"PO: `{po_file or '(none)'}` · Invoice: `{inv_file}`"
-                   + (f" · Receipt: `{receipt_file}`" if receipt_file else ""))
         po_bytes = (RAW_DIR / po_file).read_bytes() if po_file else None
         inv_bytes = (RAW_DIR / inv_file).read_bytes()
         receipt_bytes = (RAW_DIR / receipt_file).read_bytes() if receipt_file else None
+        po_card, invoice_card = st.columns(2)
+        with po_card, st.container(border=True):
+            st.markdown("**EDI 850 · Purchase order**")
+            st.code(po_file or "No purchase order in this scenario", language=None)
+            st.caption("Ready to reconcile" if po_file else
+                       "This scenario tests missing PO handling")
+        with invoice_card, st.container(border=True):
+            st.markdown("**EDI 810 · Supplier invoice**")
+            st.code(inv_file, language=None)
+            st.caption("Ready to reconcile")
+        if receipt_file:
+            st.info(f"EDI 861 receipt `{receipt_file}` will be stored with the case. Receipt "
+                    "verification may be unevaluated depending on matching mode.")
     else:
-        c1, c2, c3 = st.columns(3)
-        po_up = c1.file_uploader("EDI 850 purchase order (JSON)", type="json")
-        inv_up = c2.file_uploader("EDI 810 invoice (JSON)", type="json")
-        rc_up = c3.file_uploader("EDI 861 receiving advice (JSON)", type="json")
+        po_card, invoice_card = st.columns(2)
+        with po_card, st.container(border=True):
+            st.markdown("**EDI 850 · Purchase order**")
+            po_up = st.file_uploader("Select normalized JSON", type="json", key="upload_po")
+        with invoice_card, st.container(border=True):
+            st.markdown("**EDI 810 · Supplier invoice**")
+            inv_up = st.file_uploader("Select normalized JSON", type="json", key="upload_invoice")
         po_bytes = po_up.getvalue() if po_up else None
         inv_bytes = inv_up.getvalue() if inv_up else None
+        with st.container(border=True):
+            st.markdown("**EDI 861 · Optional receipt document**")
+            rc_up = st.file_uploader("Select normalized JSON receipt", type="json",
+                                     key="upload_receipt")
         receipt_bytes = rc_up.getvalue() if rc_up else None
         if rc_up and not three_way:
             st.info("861 receipts are stored but unsupported for reconciliation while "
