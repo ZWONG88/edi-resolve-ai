@@ -12,6 +12,8 @@ No field uses float — all numeric types are int or bool.
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,11 +44,14 @@ class Settings(BaseSettings):
     ai_provider: str = "mock"         # "mock" | "mock_unavailable" | "watsonx"
     ai_api_key: str | None = None
     ai_model_id: str | None = None
-    three_way_enabled: bool = False   # P2 feature gate; default off until AT01–AT24 pass
+    three_way_enabled: bool = True    # 850+810+861 matching (team rules doc); false = 2-way
     max_retry_attempts: int = 3       # Bounded retry limit before TECHNICAL_HOLD
     watsonx_url: str = "https://us-south.ml.cloud.ibm.com"
     watsonx_project_id: str | None = None
     ai_timeout_seconds: int = 20      # Provider call timeout before AI_UNAVAILABLE
+    de_minimis_line_tolerance: Decimal = Decimal("1.00")   # rules doc 4.1: per line + header
+    high_value_hold_threshold: Decimal = Decimal("500.00")  # rules doc 4.2 (per invoice)
+    remittance_dir: str = "data/processed/820"  # Generated (never transmitted) EDI 820 files
 
 
 def get_settings() -> Settings:

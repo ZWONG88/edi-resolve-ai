@@ -16,6 +16,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from backend import adapters
 from backend.exceptions import ParseError
 from backend.models import (
     Invoice,
@@ -62,6 +63,46 @@ def _load(source: Source) -> tuple[bytes, dict[str, Any], str | None]:
 
 def content_hash(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def _team_doc(data: bytes, expected: str) -> dict[str, Any] | None:
+    """The document if `data` is one team-schema document (see backend/adapters.py)."""
+    try:
+        obj = adapters.loads(data)
+    except ParseError:
+        return None  # the strict path reports the envelope error
+    if isinstance(obj, list):
+        if obj and all(adapters.is_team_document(d) for d in obj):
+            raise ParseError("<envelope>", f"{len(obj)} documents",
+                             "file holds several documents; use dataset import")
+        return None
+    if not adapters.is_team_document(obj):
+        return None
+    found = str(obj["transaction_type"])
+    if found != expected:
+        raise ParseError("transaction_type", found, f"expected document type {expected}")
+    return obj
+
+
+def _adapt(builder: Any, doc: dict[str, Any], path: str | None) -> Any:
+    canonical = adapters.canonical_bytes(doc)
+    try:
+        model = builder(doc, content_hash(canonical))
+    except ValidationError as exc:
+        err = exc.errors()[0]
+        loc = ".".join(str(p) for p in err["loc"])
+        raise ParseError(loc, err.get("input"), err["msg"]) from exc
+    return model.model_copy(update={"source_path": path, "ingested_at": _now()}) if hasattr(
+        model, "ingested_at") else model.model_copy(update={"source_path": path})
+
+
+def normalize_source(data: bytes) -> bytes:
+    """Bytes stored for a document: canonical JSON for team-schema documents."""
+    try:
+        obj = adapters.loads(data)
+    except ParseError:
+        return data
+    return adapters.canonical_bytes(obj) if adapters.is_team_document(obj) else data
 
 
 def _require_str(obj: dict[str, Any], key: str, prefix: str = "") -> str:
@@ -164,8 +205,17 @@ def _build(model: type, field_prefix: str, **kwargs: Any) -> Any:
         raise ParseError(f"{field_prefix}{loc}", err.get("input"), err["msg"]) from exc
 
 
+def _read(source: Source) -> tuple[bytes, str | None]:
+    if isinstance(source, bytes):
+        return source, None
+    return Path(source).read_bytes(), str(source)
+
+
 def parse_po(source: Source) -> PurchaseOrder:
-    data, doc, path = _load(source)
+    raw, path = _read(source)
+    if (team := _team_doc(raw, "850")) is not None:
+        return _adapt(adapters.team_po, team, path)
+    data, doc, _ = _load(raw)
     _check_envelope(doc, "850")
     header = {key: _require_str(doc, key) for key in _PO_HEADER}
     currency = header["currency"].upper()
@@ -190,7 +240,10 @@ def parse_po(source: Source) -> PurchaseOrder:
 
 
 def parse_invoice(source: Source) -> Invoice:
-    data, doc, path = _load(source)
+    raw, path = _read(source)
+    if (team := _team_doc(raw, "810")) is not None:
+        return _adapt(adapters.team_invoice, team, path)
+    data, doc, _ = _load(raw)
     _check_envelope(doc, "810")
     header = {key: _require_str(doc, key) for key in _INV_HEADER}
     currency = header["currency"].upper()
@@ -233,6 +286,9 @@ def _receipt_model(doc: dict[str, Any]) -> ReceivingAdvice | None:
             receipt_id=doc["receipt_number"],
             receipt_date=date.fromisoformat(doc["receipt_date"]),
             po_references=[doc["po_number"]],
+            buyer_id=doc.get("buyer"),
+            supplier_id=doc.get("supplier"),
+            receipt_event_id=doc.get("receipt_event_id"),
             facility=doc.get("facility"),
             content_hash="",
             lines=[
@@ -246,7 +302,7 @@ def _receipt_model(doc: dict[str, Any]) -> ReceivingAdvice | None:
                     "rejected_qty": Decimal(ln.get("rejected_quantity", "0")),
                     "damaged_qty": Decimal(ln.get("damaged_quantity", "0")),
                     "uom": ln["uom"],
-                    "receipt_event_type": ln["event_type"],
+                    "receipt_event_type": ln.get("event_type"),
                 }
                 for ln in doc["lines"]
             ],
@@ -256,8 +312,13 @@ def _receipt_model(doc: dict[str, Any]) -> ReceivingAdvice | None:
 
 
 def parse_receipt(source: Source) -> StoredDocument:
-    """Store an 861 without reconciling it (P2 is disabled in P0)."""
-    data, doc, _ = _load(source)
+    """Parse an 861 into a StoredDocument; `receipt` is set when it fits the schema."""
+    raw, path = _read(source)
+    if (team := _team_doc(raw, "861")) is not None:
+        receipt = _adapt(adapters.team_receipt, team, path)
+        return StoredDocument(doc_type="861", content_hash=receipt.content_hash,
+                              ingested_at=_now(), raw_fields=team, receipt=receipt)
+    data, doc, _ = _load(raw)
     _check_envelope(doc, "861")
     receipt = _receipt_model(doc)
     if receipt is not None:
@@ -267,7 +328,11 @@ def parse_receipt(source: Source) -> StoredDocument:
 
 
 def detect_doc_type(source: Source) -> str:
-    _, doc, _ = _load(source)
+    raw, _ = _read(source)
+    obj = adapters.loads(raw)
+    if adapters.is_team_document(obj):
+        return str(obj["transaction_type"])
+    _, doc, _ = _load(raw)
     doc_type = doc.get("doc_type")
     if doc_type not in SUPPORTED_DOC_TYPES:
         raise ParseError("doc_type", doc_type, "unsupported or missing document type")

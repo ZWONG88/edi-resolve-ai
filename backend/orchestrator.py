@@ -1,8 +1,13 @@
-"""Orchestrator: ingest, reconcile, explain, review, rerun.
+"""Orchestrator: ingest, reconcile, explain, review, rerun, import datasets, remit.
 
 The single backend entry point for the Streamlit frontend (PR #1 backend plan).
 Pages import only this module. Every state change and its audit event are committed
 in one transaction.
+
+With THREE_WAY_ENABLED (default) invoices are matched against the PO and the accepted
+receipt quantity from the 861s (team rules doc). Clean invoices are auto-approved,
+discrepancies get a short-pay suggestion, and an EDI 820 file is generated (never
+transmitted) when the disposition allows payment.
 """
 
 from __future__ import annotations
@@ -12,10 +17,12 @@ import json
 import sqlite3
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from backend import ai_resolver, comparator, db, parser, reference
+from backend import adapters, ai_resolver, comparator, db, parser, reference, remittance
+from backend import disposition as dispo
 from backend.allocation import get_prior_allocations
 from backend.config import get_settings
 from backend.exceptions import ParseError, ReviewValidationError, StaleVersionError
@@ -24,8 +31,10 @@ from backend.models import (
     AIExplanation,
     AuditEvent,
     CaseResult,
+    Disposition,
     FindingStatus,
     Invoice,
+    Money,
     PurchaseOrder,
     ReconciliationPolicy,
     ReviewActionType,
@@ -33,6 +42,7 @@ from backend.models import (
     ReviewRequest,
     ReviewStatus,
 )
+from backend.receipts import ReceiptLedger, build_ledger
 
 Source = str | Path | bytes
 
@@ -49,24 +59,38 @@ REVIEW_OUTCOMES = {
     ReviewActionType.REJECT: ReviewStatus.RECOMMENDATION_REJECTED,
     ReviewActionType.ESCALATE: ReviewStatus.ESCALATED,
 }
+AUTO_APPROVE = {Disposition.AUTO_APPROVED, Disposition.APPROVED_WITH_SHORT_PAY}
 
 
 class IngestOutcome:
     """Result of process(): which case, and what happened to the upload."""
 
-    def __init__(self, case_id: str, outcome: str, result_state: str, message: str = "") -> None:
+    def __init__(self, case_id: str, outcome: str, result_state: str, message: str = "",
+                 disposition: str | None = None) -> None:
         self.case_id = case_id
         self.outcome = outcome  # CREATED, REPLAY_NOOP, QUARANTINED, DUPLICATE_CONFLICT
         self.result_state = result_state
         self.message = message
+        self.disposition = disposition
 
 
 def _bytes(src: Source) -> bytes:
-    return src if isinstance(src, bytes) else Path(src).read_bytes()
+    return parser.normalize_source(src if isinstance(src, bytes) else Path(src).read_bytes())
 
 
 def _dumps(value: Any) -> str:
     return json.dumps(value, default=str, sort_keys=True)
+
+
+def _policy(policy: ReconciliationPolicy | None) -> ReconciliationPolicy:
+    if policy is not None:
+        return policy
+    settings = get_settings()
+    return ReconciliationPolicy.baseline().model_copy(update={
+        "de_minimis_line_tolerance": Money(amount=settings.de_minimis_line_tolerance),
+        "high_value_hold_threshold": Money(amount=settings.high_value_hold_threshold),
+        "three_way_enabled": settings.three_way_enabled,
+    })
 
 
 def result_to_dict(result: CaseResult) -> dict[str, Any]:
@@ -101,11 +125,25 @@ def list_review_records(conn: sqlite3.Connection, case_id: str) -> list[sqlite3.
     return db.list_review_records(conn, case_id)
 
 
+def current_remittance(conn: sqlite3.Connection, case_id: str) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM remittances WHERE case_id = ? AND status = ? ORDER BY created_at DESC"
+        " LIMIT 1", (case_id, remittance.STATUS),
+    ).fetchone()
+
+
+def dataset_folders(root: str | Path) -> list[Path]:
+    """Sub-folders of `root` holding team-schema JSON documents."""
+    return [folder for folder in sorted(Path(root).iterdir())
+            if folder.is_dir() and any(_is_team_file(f) for f in folder.glob("*.json"))]
+
+
 def reset_demo_data(conn: sqlite3.Connection) -> None:
     """Clear the local demo database (Upload page demo tools)."""
     with db.transaction(conn):
-        for table in ("review_records", "audit_events", "ai_explanations", "allocations",
-                      "case_findings", "reconciliation_cases", "ingested_documents"):
+        for table in ("review_records", "audit_events", "ai_explanations", "remittances",
+                      "receipt_allocations", "allocations", "case_findings",
+                      "reconciliation_cases", "ingested_documents"):
             conn.execute(f"DELETE FROM {table}")
 
 
@@ -166,16 +204,18 @@ def _insert_case(
     result: dict[str, Any],
     reference_version: str | None = None,
     policy_version: str | None = None,
+    mode: str = "2way",
 ) -> str:
     case_id = db.new_id("CASE")
     now = db.utc_now()
+    disposition = dispo.classify(FindingStatus(status), mode, None, Decimal("0"))
     conn.execute(
         """INSERT INTO reconciliation_cases (id, po_id, invoice_id, status, review_status,
            mode, created_at, updated_at, evidence_version, version, reference_version,
-           policy_version, result_json)
-           VALUES (?, ?, ?, ?, 'OPEN', '2way', ?, ?, 1, 1, ?, ?, ?)""",
-        (case_id, po_id, invoice_id, status, now, now, reference_version, policy_version,
-         _dumps(result)),
+           policy_version, result_json, disposition_status)
+           VALUES (?, ?, ?, ?, 'OPEN', ?, ?, ?, 1, 1, ?, ?, ?, ?)""",
+        (case_id, po_id, invoice_id, status, mode, now, now, reference_version,
+         policy_version, _dumps(result), disposition.value),
     )
     return case_id
 
@@ -210,15 +250,84 @@ def _insert_allocations(
     invoice_doc_id: str,
     result: CaseResult,
 ) -> None:
-    conn.execute("UPDATE allocations SET active = 0 WHERE case_id = ?", (case_id,))
-    for alloc in result.allocations:
-        conn.execute(
-            """INSERT INTO allocations (id, case_id, evidence_version, po_id, po_line,
-               invoice_id, quantity, uom, active, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
-            (db.new_id("ALLOC"), case_id, evidence_version, po_doc_id, alloc["po_line"],
-             invoice_doc_id, alloc["quantity"], alloc["uom"], db.utc_now()),
-        )
+    for table, rows in (("allocations", result.allocations),
+                        ("receipt_allocations", result.receipt_allocations)):
+        conn.execute(f"UPDATE {table} SET active = 0 WHERE case_id = ?", (case_id,))
+        for alloc in rows:
+            conn.execute(
+                f"""INSERT INTO {table} (id, case_id, evidence_version, po_id, po_line,
+                   invoice_id, quantity, uom, active, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)""",
+                (db.new_id("ALLOC"), case_id, evidence_version, po_doc_id, alloc["po_line"],
+                 invoice_doc_id, alloc["quantity"], alloc["uom"], db.utc_now()),
+            )
+
+
+def _apply_outcome(
+    conn: sqlite3.Connection,
+    case_id: str,
+    evidence_version: int,
+    result: CaseResult,
+    invoice: Invoice,
+) -> tuple[dict[str, Any], Path] | None:
+    """Persist disposition and money; auto-approve; prepare the 820. In a transaction.
+
+    Returns the 820 payload and its folder, to write after commit, if one applies.
+    """
+    def money(value: Money | None) -> str | None:
+        return str(value.amount) if value is not None else None
+
+    conn.execute(
+        """UPDATE reconciliation_cases SET disposition_status = ?, invoiced_amount = ?,
+           approved_amount = ?, blocked_amount = ? WHERE id = ?""",
+        (result.disposition.value, money(result.invoiced_total), money(result.approved_total),
+         money(result.blocked_total), case_id),
+    )
+    if result.disposition in AUTO_APPROVE:
+        conn.execute("UPDATE reconciliation_cases SET review_status = ? WHERE id = ?",
+                     (ReviewStatus.AUTO_APPROVED.value, case_id))
+        _audit(conn, case_id=case_id, event_type="AUTO_APPROVED", actor="rules-engine",
+               before_state="OPEN", after_state=ReviewStatus.AUTO_APPROVED.value,
+               reason=f"Rule 5.1: {result.disposition.value}; blocked cash "
+               f"${result.blocked_total} of ${result.invoiced_total}.",
+               policy_version=result.policy_version,
+               calculations={"disposition": result.disposition.value,
+                             "approved": money(result.approved_total),
+                             "blocked": money(result.blocked_total)})
+    if remittance.can_generate(result):
+        return _prepare_820(conn, case_id, evidence_version, result, invoice)
+    return None
+
+
+def _prepare_820(
+    conn: sqlite3.Connection,
+    case_id: str,
+    evidence_version: int,
+    result: CaseResult,
+    invoice: Invoice,
+) -> tuple[dict[str, Any], Path]:
+    payload = remittance.build_820(result, invoice, case_id, evidence_version)
+    directory = Path(get_settings().remittance_dir)
+    path = remittance.target_path(payload, directory)
+    conn.execute("UPDATE remittances SET status = 'SUPERSEDED' WHERE case_id = ?", (case_id,))
+    conn.execute(
+        """INSERT INTO remittances (id, case_id, evidence_version, invoice_number, disposition,
+           paid_amount, status, file_path, payload_json, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (db.new_id("REM"), case_id, evidence_version, invoice.invoice_id,
+         payload["disposition"], payload["paid_amount"], remittance.STATUS, str(path),
+         _dumps(payload), db.utc_now()),
+    )
+    _audit(conn, case_id=case_id, event_type="REMITTANCE_820_GENERATED", actor="rules-engine",
+           calculations={"paid_amount": payload["paid_amount"],
+                         "adjustment_amount": payload["adjustment_amount"],
+                         "file": str(path), "transmitted": False})
+    return payload, directory
+
+
+def _write_820(prepared: tuple[dict[str, Any], Path] | None) -> None:
+    if prepared is not None:
+        remittance.write_820(*prepared)
 
 
 # ----------------------------------------------------------------- ingestion
@@ -240,18 +349,8 @@ def _quarantine(
                after_state="QUARANTINED", doc_hashes={doc_type: parser.content_hash(data)},
                calculations={"error": error, "parser_version": parser.PARSER_VERSION})
     return IngestOutcome(case_id, "QUARANTINED", "QUARANTINED",
-                         f"{err.field_name} — {err.message}")
-
-
-def _parse_or_quarantine(
-    conn: sqlite3.Connection, src: Source, doc_type: str, actor: str
-) -> tuple[PurchaseOrder | Invoice | None, bytes, IngestOutcome | None]:
-    data = _bytes(src)
-    try:
-        doc = parser.parse_po(data) if doc_type == "850" else parser.parse_invoice(data)
-    except ParseError as err:
-        return None, data, _quarantine(conn, doc_type, data, err, actor)
-    return doc, data, None
+                         f"{err.field_name} — {err.message}",
+                         Disposition.SCHEMA_VALIDATION_ERROR.value)
 
 
 def _case_for_invoice(conn: sqlite3.Connection, invoice_doc_id: str) -> sqlite3.Row | None:
@@ -259,6 +358,65 @@ def _case_for_invoice(conn: sqlite3.Connection, invoice_doc_id: str) -> sqlite3.
         "SELECT * FROM reconciliation_cases WHERE invoice_id = ? ORDER BY created_at LIMIT 1",
         (invoice_doc_id,),
     ).fetchone()
+
+
+def _ingest_po(conn: sqlite3.Connection, data: bytes, actor: str) -> IngestOutcome | None:
+    """Store a PO. Returns an outcome only when it becomes its own case (an error)."""
+    try:
+        po = parser.parse_po(data)
+    except ParseError as err:
+        return _quarantine(conn, "850", data, err, actor)
+    if _find_by_hash(conn, "850", po.content_hash) is not None:
+        return None  # replay of a stored PO
+    if (other := _find_by_key(conn, "850", _business_key(po))) is not None:
+        return _duplicate_conflict(conn, "850", data, _business_key(po), other, actor)
+    with db.transaction(conn):
+        po_doc_id = _insert_document(conn, "850", data, _business_key(po), po.supplier_id,
+                                     "VALID")
+        _audit(conn, event_type="DOCUMENT_INGESTED", actor=actor, after_state="VALID",
+               doc_hashes={po_doc_id: po.content_hash},
+               calculations={"doc_type": "850", "parser_version": parser.PARSER_VERSION})
+    return None
+
+
+def ingest_receipt(conn: sqlite3.Connection, src: Source, actor: str = "analyst") -> str:
+    """Store an 861 for 3-way matching and rerun invoices waiting on it. Returns a note."""
+    data = _bytes(src)
+    try:
+        stored = parser.parse_receipt(data)
+    except ParseError as err:
+        with db.transaction(conn):
+            _insert_document(conn, "861", data, None, None, "QUARANTINED",
+                             _dumps({"field": err.field_name, "message": err.message}))
+        return f"861 rejected: {err.field_name} — {err.message}"
+    receipt = stored.receipt
+    if _find_by_hash(conn, "861", stored.content_hash) is not None:
+        return "861 already stored (replay ignored)."
+    if receipt is None or not (receipt.buyer_id and receipt.supplier_id):
+        with db.transaction(conn):
+            _insert_document(conn, "861", data, None, None, "UNSUPPORTED_PROFILE",
+                             "861 does not fit the supported receipt profile")
+        return "861 stored but not usable: it does not fit the supported receipt profile."
+    key = f"{receipt.buyer_id}|{receipt.supplier_id}|{receipt.po_references[0]}"
+    with db.transaction(conn):
+        doc_id = _insert_document(conn, "861", data, key, receipt.supplier_id, "VALID")
+        _audit(conn, event_type="RECEIPT_INGESTED", actor=actor, after_state="VALID",
+               doc_hashes={doc_id: stored.content_hash},
+               calculations={"receipt_id": receipt.receipt_id, "po": key})
+    reran = _rerun_waiting(conn, key, actor)
+    return f"861 {receipt.receipt_id} stored" + (
+        f"; reran {reran} case(s) waiting for it." if reran else ".")
+
+
+def _rerun_waiting(conn: sqlite3.Connection, po_key: str, actor: str) -> int:
+    rows = conn.execute(
+        """SELECT c.id FROM reconciliation_cases c JOIN ingested_documents d ON d.id = c.po_id
+           WHERE c.status = ? AND d.business_key = ?""",
+        (FindingStatus.WAIT_RECEIPT.value, po_key),
+    ).fetchall()
+    for row in rows:
+        rerun_case(conn, row["id"], actor=actor)
+    return len(rows)
 
 
 def process(
@@ -270,30 +428,36 @@ def process(
     policy: ReconciliationPolicy | None = None,
     actor: str = "analyst",
 ) -> IngestOutcome:
-    """Ingest an invoice (plus optional PO and 861) and reconcile it two-way."""
+    """Ingest an invoice (plus optional PO and 861) and reconcile it."""
     notes: list[str] = []
-
     if po_src is not None:
-        parsed, po_bytes, bad = _parse_or_quarantine(conn, po_src, "850", actor)
-        if bad:
+        if (bad := _ingest_po(conn, _bytes(po_src), actor)) is not None:
             return bad
-        po: PurchaseOrder = parsed  # type: ignore[assignment]
-        if _find_by_hash(conn, "850", po.content_hash) is None:
-            if (other := _find_by_key(conn, "850", _business_key(po))) is not None:
-                return _duplicate_conflict(conn, "850", po_bytes, _business_key(po), other,
-                                           actor)
-            with db.transaction(conn):
-                po_doc_id = _insert_document(conn, "850", po_bytes, _business_key(po),
-                                             po.supplier_id, "VALID")
-                _audit(conn, event_type="DOCUMENT_INGESTED", actor=actor, after_state="VALID",
-                       doc_hashes={po_doc_id: po.content_hash},
-                       calculations={"doc_type": "850",
-                                     "parser_version": parser.PARSER_VERSION})
+    unsupported_receipt = None
+    if receipt_src is not None:
+        if get_settings().three_way_enabled:
+            notes.append(ingest_receipt(conn, receipt_src, actor))
+        else:
+            unsupported_receipt = _bytes(receipt_src)
+            notes.append("861 receipt stored but unsupported for reconciliation "
+                         "(THREE_WAY_ENABLED=false); receipt check NOT_EVALUATED.")
+    return _ingest_invoice(conn, _bytes(invoice_src), reference_dir, policy, actor, notes,
+                           unsupported_receipt)
 
-    parsed_inv, inv_bytes, bad = _parse_or_quarantine(conn, invoice_src, "810", actor)
-    if bad:
-        return bad
-    invoice: Invoice = parsed_inv  # type: ignore[assignment]
+
+def _ingest_invoice(
+    conn: sqlite3.Connection,
+    inv_bytes: bytes,
+    reference_dir: str | Path | None,
+    policy: ReconciliationPolicy | None,
+    actor: str,
+    notes: list[str],
+    unsupported_receipt: bytes | None = None,
+) -> IngestOutcome:
+    try:
+        invoice = parser.parse_invoice(inv_bytes)
+    except ParseError as err:
+        return _quarantine(conn, "810", inv_bytes, err, actor)
 
     replay = _find_by_hash(conn, "810", invoice.content_hash)
     if replay is not None and (case := _case_for_invoice(conn, replay["id"])) is not None:
@@ -302,21 +466,15 @@ def process(
                    before_state=case["status"], after_state=case["status"],
                    doc_hashes={replay["id"]: invoice.content_hash})
         return IngestOutcome(case["id"], "REPLAY_NOOP", case["status"],
-                             "Identical invoice already processed; returning the original case.")
+                             "Identical invoice already processed; returning the original case.",
+                             case["disposition_status"])
     inv_key = _business_key(invoice)
     if (other := _find_by_key(conn, "810", inv_key)) is not None:
         return _duplicate_conflict(conn, "810", inv_bytes, inv_key, other, actor)
 
-    receipt = None
-    if receipt_src is not None:
-        receipt = parser.parse_receipt(_bytes(receipt_src))
-        schema = "valid P2 ReceivingAdvice" if receipt.receipt else "not P2-schema valid"
-        notes.append(f"861 receipt stored ({schema}) but unsupported for reconciliation "
-                     "(THREE_WAY_ENABLED=false); receipt check NOT_EVALUATED.")
-
     po_row = _find_by_key(conn, "850", _po_key_for(invoice))
     return _reconcile_new(conn, invoice, inv_bytes, po_row, reference_dir, policy, actor,
-                          notes, receipt_src, receipt.content_hash if receipt else None)
+                          notes, unsupported_receipt)
 
 
 def _duplicate_conflict(
@@ -346,7 +504,16 @@ def _duplicate_conflict(
                calculations=detail)
     return IngestOutcome(case_id, "DUPLICATE_CONFLICT", "DUPLICATE_CONFLICT",
                          f"Same business key {key} with different content; held pending "
-                         "verified revision.")
+                         "verified revision.", Disposition.DUPLICATE_INVOICE_REJECTED.value)
+
+
+def _receipt_ledger(conn: sqlite3.Connection, po_key: str) -> ReceiptLedger:
+    rows = conn.execute(
+        "SELECT original_bytes FROM ingested_documents WHERE doc_type = '861'"
+        " AND business_key = ? AND validation_status = 'VALID'", (po_key,),
+    ).fetchall()
+    receipts = [parser.parse_receipt(bytes(r["original_bytes"])).receipt for r in rows]
+    return build_ledger([r for r in receipts if r is not None])
 
 
 def _run_rules(
@@ -356,16 +523,24 @@ def _run_rules(
     invoice_doc_id: str | None,
     conn: sqlite3.Connection,
     reference_dir: str | Path | None,
-    policy: ReconciliationPolicy | None,
+    policy: ReconciliationPolicy,
 ) -> tuple[CaseResult, str]:
     ref_dir = Path(reference_dir) if reference_dir else None
     uom_ref = reference.load_uom_conversions(ref_dir / reference.UOM_FILE if ref_dir else None)
     price_ref = reference.load_price_contracts(
         ref_dir / reference.CONTRACT_FILE if ref_dir else None
     )
-    prior = get_prior_allocations(po_doc_id, [ln.line_id for ln in po.lines], conn,
-                                  invoice_doc_id)
-    result = comparator.compare(po, invoice, uom_ref, price_ref, policy, prior)
+    line_ids = [ln.line_id for ln in po.lines]
+    prior = get_prior_allocations(po_doc_id, line_ids, conn, invoice_doc_id)
+    three_way = get_settings().three_way_enabled
+    ledger = prior_receipt = None
+    if three_way:
+        ledger = _receipt_ledger(conn, _po_key_for(invoice))
+        prior_receipt = get_prior_allocations(po_doc_id, line_ids, conn, invoice_doc_id,
+                                              kind="receipt")
+    result = comparator.compare(po, invoice, uom_ref, price_ref, policy, prior,
+                                receipts=ledger, three_way=three_way,
+                                prior_receipt_allocated=prior_receipt)
     return result, reference.reference_version(ref_dir)
 
 
@@ -382,11 +557,13 @@ def _evaluate(
         return (
             FindingStatus.WAIT_DOCUMENT.value,
             {"overall_status": "WAIT_DOCUMENT",
+             "disposition": Disposition.PO_HEADER_MISMATCH.value,
              "missing": f"PO {invoice.po_references[0]} for buyer {invoice.buyer_id} / "
              f"supplier {invoice.supplier_id} not found; no cross-partner linking."},
             None, None, [],
         )
     po = parser.parse_po(bytes(po_row["original_bytes"]))
+    policy = _policy(policy)
     attempts = get_settings().max_retry_attempts
     errors: list[str] = []
     for _attempt in range(attempts):
@@ -399,7 +576,8 @@ def _evaluate(
             errors.append(f"{type(exc).__name__}: {exc}")
     return (
         FindingStatus.TECHNICAL_HOLD.value,
-        {"overall_status": "TECHNICAL_HOLD", "errors": errors,
+        {"overall_status": "TECHNICAL_HOLD", "disposition": Disposition.HOLD.value,
+         "errors": errors,
          "message": f"Rules engine failed after {attempts} attempts; no pass."},
         None, None, errors,
     )
@@ -414,27 +592,28 @@ def _reconcile_new(
     policy: ReconciliationPolicy | None,
     actor: str,
     notes: list[str],
-    receipt_src: Source | None,
-    receipt_hash: str | None,
+    unsupported_receipt: bytes | None,
 ) -> IngestOutcome:
     state, result_dict, result, ref_version, errors = _evaluate(
         conn, invoice, po_row, None, reference_dir, policy
     )
     result_dict["notes"] = notes
     policy_version = result.policy_version if result else None
+    prepared = None
     with db.transaction(conn):
         inv_doc_id = _insert_document(conn, "810", inv_bytes, _business_key(invoice),
                                       invoice.supplier_id, "VALID")
         hashes = {inv_doc_id: invoice.content_hash}
         if po_row is not None:
             hashes[po_row["id"]] = po_row["content_hash"]
-        if receipt_src is not None:
-            receipt_id = _insert_document(conn, "861", _bytes(receipt_src), None,
+        if unsupported_receipt is not None:
+            receipt_id = _insert_document(conn, "861", unsupported_receipt, None,
                                           invoice.supplier_id, "STORED_UNSUPPORTED",
-                                          "P2 three-way matching disabled; stored only.")
-            hashes[receipt_id] = receipt_hash or ""
+                                          "Three-way matching disabled; stored only.")
+            hashes[receipt_id] = parser.content_hash(unsupported_receipt)
         case_id = _insert_case(conn, state, po_row["id"] if po_row else None, inv_doc_id,
-                               result_dict, ref_version, policy_version)
+                               result_dict, ref_version, policy_version,
+                               result.mode if result else "2way")
         _audit(conn, case_id=case_id, event_type="DOCUMENT_INGESTED", actor=actor,
                after_state="VALID", doc_hashes=hashes,
                calculations={"parser_version": parser.PARSER_VERSION, "notes": notes})
@@ -449,8 +628,82 @@ def _reconcile_new(
                reference_version=ref_version,
                findings=_dumps(result_dict.get("not_evaluated_checks", [])),
                calculations={"run_id": result.run_id if result else None,
-                             "allocations": result.allocations if result else []})
-    return IngestOutcome(case_id, "CREATED", state, "; ".join(notes))
+                             "mode": result.mode if result else None,
+                             "disposition": result_dict.get("disposition"),
+                             "allocations": result.allocations if result else [],
+                             "receipt_allocations": result.receipt_allocations
+                             if result else []})
+        if result is not None:
+            prepared = _apply_outcome(conn, case_id, 1, result, invoice)
+    _write_820(prepared)
+    return IngestOutcome(case_id, "CREATED", state, "; ".join(notes),
+                         result_dict.get("disposition"))
+
+
+# ------------------------------------------------------------- dataset import
+
+
+def _is_team_file(path: Path) -> bool:
+    try:
+        obj = adapters.loads(path.read_bytes())
+    except (ParseError, OSError):
+        return False
+    docs = obj if isinstance(obj, list) else [obj]
+    return bool(docs) and all(adapters.is_team_document(d) for d in docs)
+
+
+def import_dataset(
+    conn: sqlite3.Connection,
+    folder: str | Path,
+    reference_dir: str | Path | None = None,
+    actor: str = "analyst",
+) -> dict[str, Any]:
+    """Import every 850/861/810 in a folder (POs and receipts first) and reconcile."""
+    docs: dict[str, list[bytes]] = {"850": [], "861": [], "810": []}
+    skipped: list[str] = []
+    for path in sorted(Path(folder).glob("*.json")):
+        try:
+            for doc in adapters.load_team_file(path):
+                kind = str(doc["transaction_type"])
+                if kind in docs:
+                    docs[kind].append(adapters.canonical_bytes(doc))
+                else:
+                    skipped.append(f"{path.name}: unsupported transaction {kind}")
+        except ParseError as err:
+            skipped.append(f"{path.name}: {err}")
+    outcomes: list[IngestOutcome] = []
+    for data in docs["850"]:
+        if (bad := _ingest_po(conn, data, actor)) is not None:
+            outcomes.append(bad)
+    receipt_notes = [ingest_receipt(conn, data, actor) for data in docs["861"]]
+    for data in docs["810"]:
+        outcomes.append(_ingest_invoice(conn, data, reference_dir, None, actor, []))
+    return summarize(conn, outcomes, counts={k: len(v) for k, v in docs.items()},
+                     skipped=skipped, receipt_notes=receipt_notes)
+
+
+def summarize(conn: sqlite3.Connection, outcomes: list[IngestOutcome],
+              **extra: Any) -> dict[str, Any]:
+    """Per-case rows, counts by disposition and money totals for a batch."""
+    rows = []
+    totals = {"invoiced": Decimal("0"), "approved": Decimal("0"), "blocked": Decimal("0"),
+              "held": Decimal("0")}
+    by_disposition: dict[str, int] = {}
+    for out in outcomes:
+        case = db.get_case(conn, out.case_id)
+        rows.append({"case_id": out.case_id, "outcome": out.outcome, "state": case["status"],
+                     "disposition": case["disposition_status"],
+                     "invoiced": case["invoiced_amount"], "approved": case["approved_amount"],
+                     "blocked": case["blocked_amount"]})
+        by_disposition[case["disposition_status"]] = (
+            by_disposition.get(case["disposition_status"], 0) + 1)
+        for key in ("invoiced", "approved", "blocked"):
+            if case[f"{key}_amount"] is not None:
+                totals[key] += Decimal(case[f"{key}_amount"])
+        if case["approved_amount"] is None and case["invoiced_amount"] is not None:
+            totals["held"] += Decimal(case["invoiced_amount"])
+    return {"cases": rows, "by_disposition": by_disposition,
+            "totals": {k: str(v) for k, v in totals.items()}, **extra}
 
 
 # --------------------------------------------------------------------- rerun
@@ -478,21 +731,26 @@ def rerun_case(
         conn, invoice, po_row, case["invoice_id"], reference_dir, policy
     )
     new_ev = case["evidence_version"] + 1
+    prepared = None
     with db.transaction(conn):
         inv_doc_id = case["invoice_id"]
         if corrected_invoice_src is not None:
             inv_doc_id = _insert_document(conn, "810", inv_bytes, _business_key(invoice),
                                           invoice.supplier_id, "VALID_REVISION",
                                           f"supersedes {case['invoice_id']}")
+        disposition = result.disposition.value if result else result_dict.get("disposition")
         conn.execute(
             """UPDATE reconciliation_cases SET status = ?, po_id = ?, invoice_id = ?,
                evidence_version = ?, version = version + 1, review_status = 'OPEN',
                disposition = NULL, updated_at = ?, reference_version = ?, policy_version = ?,
-               result_json = ? WHERE id = ?""",
+               result_json = ?, mode = ?, disposition_status = ?, invoiced_amount = NULL,
+               approved_amount = NULL, blocked_amount = NULL WHERE id = ?""",
             (state, po_row["id"] if po_row else None, inv_doc_id, new_ev, db.utc_now(),
              ref_version, result.policy_version if result else None, _dumps(result_dict),
-             case_id),
+             result.mode if result else case["mode"], disposition, case_id),
         )
+        conn.execute("UPDATE remittances SET status = 'SUPERSEDED' WHERE case_id = ?",
+                     (case_id,))
         for err in errors:
             _audit(conn, case_id=case_id, event_type="RULES_RETRY", actor="rules-engine",
                    calculations={"error": err})
@@ -505,7 +763,11 @@ def rerun_case(
                policy_version=result.policy_version if result else None,
                calculations={"evidence_version": new_ev,
                              "previous_evidence_version": case["evidence_version"],
+                             "disposition": disposition,
                              "stale_recommendations_invalidated": True})
+        if result is not None:
+            prepared = _apply_outcome(conn, case_id, new_ev, result, invoice)
+    _write_820(prepared)
     return state
 
 
@@ -581,6 +843,7 @@ def review_action(
     """Record approve / reject / escalate atomically with its audit event and record.
 
     ReviewRequest already guarantees a non-empty reason and an owner for ESCALATE.
+    Approving a NEEDS_HUMAN_AP_REVIEW invoice also generates its short-pay 820.
     Raises ReviewValidationError, StaleVersionError or AuditPersistenceError; on any
     error nothing is committed.
     """
@@ -620,6 +883,7 @@ def review_action(
     }[action]
     reason = request.reason.strip()
 
+    prepared = None
     with db.transaction(conn):
         cur = conn.execute(
             """UPDATE reconciliation_cases SET review_status = ?, disposition = ?,
@@ -647,6 +911,15 @@ def review_action(
             escalation_owner=owner or None, utc_timestamp=datetime.now(timezone.utc),
             audit_event_id=event_id,
         ))
+        if (action == ReviewActionType.APPROVE
+                and case["disposition_status"] == Disposition.NEEDS_HUMAN_AP_REVIEW.value):
+            result = CaseResult.model_validate(json.loads(case["result_json"]))
+            doc = db.get_document(conn, case["invoice_id"])
+            invoice = parser.parse_invoice(bytes(doc["original_bytes"]))
+            if remittance.can_generate(result, human_approved=True):
+                prepared = _prepare_820(conn, request.case_id, case["evidence_version"],
+                                        result, invoice)
+    _write_820(prepared)
     return db.get_case(conn, request.case_id)
 
 
@@ -655,6 +928,7 @@ def case_detail(conn: sqlite3.Connection, case_id: str) -> dict[str, Any]:
     if case is None:
         raise ReviewValidationError("unknown case")
     cached = get_cached_explanation(conn, case_id, case["evidence_version"])
+    remit = current_remittance(conn, case_id)
     return {
         "case": dict(case),
         "result": json.loads(case["result_json"] or "{}"),
@@ -663,5 +937,6 @@ def case_detail(conn: sqlite3.Connection, case_id: str) -> dict[str, Any]:
         "recommendation_version": cached[1] if cached else None,
         "audit": [dict(r) for r in db.list_audit_events(conn, case_id)],
         "reviews": [dict(r) for r in db.list_review_records(conn, case_id)],
+        "remittance": json.loads(remit["payload_json"]) if remit else None,
+        "remittance_file": remit["file_path"] if remit else None,
     }
-

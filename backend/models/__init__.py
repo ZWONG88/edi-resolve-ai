@@ -42,6 +42,7 @@ from backend.models.reconciliation import (
     BLOCKING_STATES,
     STATE_PRECEDENCE,
     CaseResult,
+    Disposition,
     Finding,
     LineResult,
     ReconciliationPolicy,
@@ -89,6 +90,7 @@ __all__ = [
     # Reconciliation models
     "BLOCKING_STATES",
     "STATE_PRECEDENCE",
+    "Disposition",
     "ReconciliationPolicy",
     "Finding",
     "LineResult",

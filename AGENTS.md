@@ -65,11 +65,17 @@ backend/
                   #   reconciliation, review, ai — import via `from backend.models import ...`
   exceptions.py   # ParseError, ReconciliationError, AuditPersistenceError
   parser.py       # parse_po(), parse_invoice() → Pydantic models; "sha256:" hash + raw strings
+  adapters.py     # team-format JSON (transaction_type, arrays) → models; exact Decimals
   reference.py    # sole I/O for data/reference/; comparator must not open files directly
   comparator.py   # compare() — deterministic rules only; no AI, no floats
-  allocation.py   # get_allocated_quantity() — cumulative PO allocation check (AT08)
+  allocation.py   # cumulative PO (AT08) and accepted-receipt (AT31) allocations
+  receipts.py     # 861 ledger: incremental/cumulative, replay, ambiguity
+  disposition.py  # dollar impact per line + invoice disposition (rules doc 3-5)
+  money.py        # round_money() — ROUND_HALF_UP at extension only
+  remittance.py   # EDI 820 payload (generated, never transmitted)
   ai_resolver.py  # explain() → AIExplanation; AI_PROVIDER=mock | mock_unavailable | watsonx
-  orchestrator.py # the ONLY backend module pages import: process(), rerun_case(),
+  orchestrator.py # the ONLY backend module pages import: process(), import_dataset(),
+                  #   ingest_receipt(), rerun_case(),
                   #   request_ai_explanation(), review_action(ReviewRequest), list_*()
 app.py            # Streamlit entry; calls init_db() before any page renders
 ui_shared.py      # Streamlit helpers: cached DB connection, demo scenarios, mode banner
@@ -96,8 +102,10 @@ tests/
 - **Reviewer reason required** before any approve/reject/escalate; stale/concurrent actions must fail gracefully
 - **Atomic audit writes**: if `AuditPersistenceError`, roll back state and display "Action not saved" — never silently succeed
 - **`init_db()`** is idempotent — safe to call on every app startup
-- **`AI_PROVIDER=mock`** default — real provider (`watsonx`) is opt-in; all config goes through `backend/config.py`; **`THREE_WAY_ENABLED=false`** default — P2 receipt matching is opt-in
-- **P0 release gate**: AT01–AT24 in `tests/test_acceptance.py` must all pass
+- **`AI_PROVIDER=mock`** default — real provider (`watsonx`) is opt-in; all config goes through `backend/config.py`; **`THREE_WAY_ENABLED=true`** default — the team rules doc makes 850+810+861 matching the core flow; `false` falls back to two-way (no auto-approval, no 820)
+- **Team rules doc** (`docs/rules-comparison.md`) is followed: auto-approve clean three-way matches, short-pay discrepancies, generate EDI 820 files — **never transmit** them; bill on **accepted** (not received) quantity
+- Team-format datasets (`transaction_type` JSON) are read only through `backend/adapters.py`; dollar impact/disposition only in `backend/disposition.py`
+- **Release gate**: AT01–AT24 (`tests/test_acceptance.py`), AT25–AT35 except AT33 (`tests/test_three_way.py`) and the frozen team dataset outcomes (`tests/test_datasets.py`) must all pass
 
 ## Code Style
 

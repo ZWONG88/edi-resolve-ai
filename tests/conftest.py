@@ -11,6 +11,7 @@ from backend import db, orchestrator
 
 FIXTURES = Path(__file__).parent / "fixtures"
 REFERENCE = FIXTURES / "reference"
+DATASETS = FIXTURES / "datasets"
 
 
 def fx(name: str) -> Path:
@@ -28,6 +29,7 @@ def _isolated_settings(
     monkeypatch.setenv("THREE_WAY_ENABLED", "false")
     monkeypatch.setenv("MAX_RETRY_ATTEMPTS", "3")
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "default.db"))
+    monkeypatch.setenv("REMITTANCE_DIR", str(tmp_path / "820"))
 
 
 @pytest.fixture

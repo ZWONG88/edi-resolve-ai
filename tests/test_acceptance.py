@@ -331,6 +331,7 @@ def test_at20_rules_failure_hold_retry_restart(db_file, conn, run, monkeypatch) 
         calls["n"] += 1
         raise RuntimeError("reference service down")
 
+    real_compare = orchestrator.comparator.compare
     monkeypatch.setattr(orchestrator.comparator, "compare", broken)
     out = run("inv_AT07.json", "po_AT07.json")
     assert out.result_state == "TECHNICAL_HOLD"
@@ -338,7 +339,7 @@ def test_at20_rules_failure_hold_retry_restart(db_file, conn, run, monkeypatch) 
     assert events(conn, out.case_id).count("RULES_RETRY") == get_settings().max_retry_attempts
     assert conn.execute("SELECT COUNT(*) FROM allocations").fetchone()[0] == 0
 
-    monkeypatch.undo()
+    monkeypatch.setattr(orchestrator.comparator, "compare", real_compare)
     conn.close()
     restarted = db.init_db(db_file)  # application restart
     for _ in range(2):  # retry after restart, then retry again
