@@ -4,7 +4,7 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Project
 
-**EDIResolve AI** — AI-powered EDI transaction discrepancy detection and resolution (SpartHill Hacks 2026 IBM AI Challenge). Python backend with a Streamlit dashboard.
+**EDI Resolve** — AI-powered EDI transaction discrepancy detection and resolution (SpartHill Hacks 2026 IBM AI Challenge). Python backend with a Streamlit dashboard.
 
 **PRD:** `docs/PRD.md` — source of truth for scope and acceptance criteria
 **Build Plan:** `edi-resolve-plan.md` (project root) — 10-task implementation plan; P0 release gate = AT01–AT24 pass

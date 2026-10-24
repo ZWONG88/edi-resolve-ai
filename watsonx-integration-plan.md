@@ -1,4 +1,4 @@
-# EDIResolve AI — watsonx Integration & First Run Plan
+# EDI Resolve — watsonx Integration & First Run Plan
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# EDIResolve AI — Backend Implementation Plan
+# EDI Resolve — Backend Implementation Plan
 
 > **Implementation status (feature/p0-mvp):** Phases 1–7 are implemented. A few module names
 > differ from this plan: `reference_store.py` → `backend/reference.py`, `audit_db.py` →
@@ -15,7 +15,7 @@
 
 ## Overview
 
-This plan covers the backend infrastructure for EDIResolve AI. The backend is a pure Python library (no HTTP server) that the Streamlit frontend calls directly as functions. It owns:
+This plan covers the backend infrastructure for EDI Resolve. The backend is a pure Python library (no HTTP server) that the Streamlit frontend calls directly as functions. It owns:
 
 - Shared Pydantic schemas consumed by all teammates
 - Normalized JSON fixtures so development can proceed without live EDI files

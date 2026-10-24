@@ -1,4 +1,4 @@
-# EDIResolve AI — Build Plan (v2)
+# EDI Resolve — Build Plan (v2)
 
 ## Overview
 

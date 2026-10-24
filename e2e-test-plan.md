@@ -1,4 +1,4 @@
-# EDIResolve AI — End-to-End Backend Test Plan
+# EDI Resolve — End-to-End Backend Test Plan
 
 ## Overview
 
