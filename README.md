@@ -40,7 +40,12 @@ The app runs fully offline with a rules-based AI mock (`AI_PROVIDER=mock`). Open
   $45 shipping charge. It is held, with $29,138.16 not evaluated.
 
 Then open **Exception Review** to see the highlighted lines, suggested corrections and the
-820 download.
+820 download. The **Reconciliations** home page summarizes every case by disposition, with
+invoiced, approved and blocked totals.
+
+To start over, open **Upload & Process → Demo tools → Reset test data**. It deletes only
+test/sample data. Real uploads and their audit history are kept, and the reset itself is
+audited.
 
 ### Adding your own data
 
@@ -54,13 +59,25 @@ document or an array of documents. Supported types:
 Lines are matched by `line_number` + `buyer_sku`. Pack sizes for case/each conversions go in
 `data/reference/uom_conversions.json`. The folder then appears in the import picker.
 
-Run the tests:
+## Testing
 
 ```bash
-pytest                 # unit, AT01–AT35 acceptance, team datasets, UI smoke tests
-pytest -m integration  # live watsonx.ai call (needs .env keys)
+pytest                 # everything except live AI calls
+pytest -m integration  # live watsonx.ai call (needs .env keys; excluded by default)
 ruff check .
 ```
+
+| Suite | Covers |
+|---|---|
+| `test_acceptance.py` | AT01–AT24, the formal two-way release gate |
+| `test_three_way.py` | AT25–AT35 (except AT33): receipts, short-pay, 820 generation |
+| `test_datasets.py` | Frozen outcomes and dollar totals for the team datasets |
+| `test_e2e_*.py` | Ingestion, edge cases and full reviewer journeys through the orchestrator |
+| `test_parser.py`, `test_adapters.py`, `test_reference.py`, `test_comparator.py`, `test_disposition.py`, `test_ai_resolver.py`, `test_db.py`, `test_models.py`, `test_catalog.py` | Unit tests per module |
+| `test_ui.py` | Headless Streamlit `AppTest` smoke tests |
+
+**Release gate:** `test_acceptance.py`, `test_three_way.py` and `test_datasets.py` must all
+pass.
 
 ## Using IBM watsonx.ai (optional)
 
@@ -84,24 +101,75 @@ comfortably in the watsonx.ai Lite plan.
 ## How it works
 
 ```
-850 PO ─┐                                         ┌─> Exception Review (human decides)
-        ├─> parser ─> comparator (rules) ─> case ─┤
-810 INV ┘   SHA-256,   Decimal, UOM +      + audit └─> AI explanation (Granite, validated)
-            raw fields  price-basis normalization
+850 PO  ─┐                  reference data ─┐   (UOM factors, price contracts)
+861 RCV ─┼─> parser /       receipt ledger ─┼─> comparator ─> disposition ─> case + findings
+810 INV ─┘   adapters       prior allocs  ──┘   (pure rules)  ($ approved/     + audit event
+             (SHA-256,                                         blocked)        (one transaction)
+              Decimal only)                                                         │
+        ┌───────────────────────────────────────────────────────────────────────────┤
+        ├─> AUTO_APPROVED / APPROVED_WITH_SHORT_PAY ─> EDI 820 file (generated, never sent)
+        ├─> NEEDS_HUMAN_AP_REVIEW / HOLD ─> Exception Review (human decides, with reason)
+        └─> on demand: AI explanation (Granite) ─> validated against the evidence ─> shown
+                                                   as "AI Suggestion — requires human review"
 ```
 
 | Module | Role |
 |---|---|
-| `backend/models/` | Shared Pydantic v2 contract (from PR #1): `PurchaseOrder`, `Invoice`, `Money`, `Evidence`, `CaseResult`, `ReviewRequest`, ... |
-| `backend/config.py` | `Settings` (pydantic-settings): every environment variable in one place. |
-| `backend/parser.py` | Validates 850/810 JSON into the Pydantic models and keeps the original strings. Every number is a `Decimal` and JSON floats are rejected. Each document gets a `sha256:` provenance hash. |
-| `backend/reference.py` | The only reader of `data/reference/` (UOM conversions, price contracts). Missing, expired or overlapping records are surfaced, never guessed. |
-| `backend/comparator.py` | Pure rules engine. `Q_base = Q × f`, `P_base = P / (b × f)`, `ROUND_HALF_UP` only at line extension, configurable tolerances (zero by default). |
-| `backend/allocation.py` | Cumulative invoice-vs-PO allocation, so over-billing across invoices is caught. |
-| `backend/ai_resolver.py` | Builds the evidence bundle (no raw EDI, no free text). Calls Granite and **validates** the output: unknown citations, numbers that disagree with the rules, invented IDs or disallowed actions all mean the narrative is discarded. |
-| `backend/orchestrator.py` | The only backend module the UI imports. Covers ingest, dedupe/replay, reconcile with bounded retry, review actions (`ReviewRequest`) and rerun on corrected evidence. |
-| `backend/db.py` | SQLite. Each state change and its audit event are committed in a single transaction. |
-| `pages/` | Streamlit pages: Upload & Process, Exception Review, Audit History. |
+| `backend/models/` | Shared Pydantic v2 contract (from PR #1): `PurchaseOrder`, `Invoice`, `ReceivingAdvice`, `Money`, `Evidence`, `CaseResult`, `ReviewRequest`, ... Also `STATE_PRECEDENCE` and `BLOCKING_STATES`. |
+| `backend/config.py` | `Settings` (pydantic-settings): every environment variable in one place, read fresh on each call. |
+| `backend/parser.py` | Validates 850/810/861 JSON into the Pydantic models and keeps the original strings. Every number is a `Decimal` and JSON numbers are rejected. Each document gets a `sha256:` provenance hash. |
+| `backend/adapters.py` | The only reader of team-format datasets (`transaction_type` JSON, one document or an array). Maps them to the same models with exact Decimals. |
+| `backend/reference.py` | The only reader of `data/reference/` (UOM conversions, price contracts, master catalogue). Missing or expired records are surfaced. Overlapping contracts or conflicting UOM factors raise instead of being guessed. `reference_version()` hashes the decision files for the audit trail. |
+| `backend/comparator.py` | Pure rules engine with no I/O, no DB and no AI. `Q_base = Q × f`, `P_base = P / (b × f)`. Two-way checks always run. In three-way mode, billing is capped at the accepted receipt quantity, and a missing 861 is `WAIT_RECEIPT`, never a silent two-way pass. The case takes the most severe finding per `STATE_PRECEDENCE`. |
+| `backend/receipts.py` | The 861 ledger. Incremental events are summed. For cumulative snapshots only the latest counts. Replays are ignored. Ambiguous or contradictory receipts are `INSUFFICIENT_EVIDENCE`. Billing uses **accepted**, not received, quantity. |
+| `backend/allocation.py` | Cumulative allocations against PO quantity (AT08) and accepted receipt quantity (AT31), so over-billing across several invoices is caught. Reruns never double count. |
+| `backend/disposition.py` | Dollar impact per line plus the invoice disposition (see below). The only place money outcomes are decided. |
+| `backend/money.py` | `round_money()`: `ROUND_HALF_UP` to cents, used only at line extension and totals. |
+| `backend/remittance.py` | Builds the EDI 820 payload with `ADJ_*` reason codes. Status is always `GENERATED_NOT_TRANSMITTED`. |
+| `backend/ai_resolver.py` | Builds the evidence bundle (no raw EDI, no free text). Calls Granite and **validates** the output: unknown citations, numbers that disagree with the rules, invented IDs or disallowed actions all mean the narrative is discarded. Never raises. |
+| `backend/orchestrator.py` | The only backend module the UI imports: `process()`, `import_dataset()`, `ingest_receipt()`, `rerun_case()`, `request_ai_explanation()`, `review_action()`, `catalog_enrichment()`, `reset_test_data()`, `list_*()`. |
+| `backend/db.py` | SQLite schema (`init_db()` is idempotent). `transaction()` is all-or-nothing, and an audit write failure raises `AuditPersistenceError`. |
+| `backend/exceptions.py` | `ParseError`, `ReconciliationError`, `AuditPersistenceError`, `StaleVersionError`, `ReviewValidationError`. |
+| `pages/` | Streamlit pages. **Reconciliations** (summary), **Upload & Process**, **Exception Review** (findings, corrections, AI suggestion, catalogue context, rerun with a corrected invoice, 820 download), **Audit History**. |
+
+## Design choices
+
+- **Rules decide, AI explains, people approve.** Every number and every disposition comes
+  from the deterministic engine. Switch the AI off (`AI_PROVIDER=mock_unavailable`) and every
+  decision stays the same.
+- **Fail closed.** Unknown, missing or contradictory evidence produces a hold or wait state,
+  never a pass. A check that couldn't run is `CHECK_NOT_EVALUATED`, which is never a pass or
+  a failure. Overlapping contracts or conflicting UOM factors stop the run instead of the code
+  picking one. If the rules engine fails after `MAX_RETRY_ATTEMPTS`, the case is
+  `TECHNICAL_HOLD`.
+- **Decimal only.** JSON numbers are rejected at parse time, so a float never exists.
+  Rounding happens only at line extension. Rounding unit prices would compound error over
+  large quantities.
+- **One money formula.** `approved = round(min(billed, PO remaining, accepted) ×
+  min(invoice price, PO price))` and `blocked = invoiced − approved`. This avoids
+  double-counting a line that is both over-priced and short-shipped. The blocked amount is
+  then split into `ADJ_PRICE` / `ADJ_SHORTAGE` / `ADJ_EXTENSION` / `ADJ_UNMAPPED`.
+- **Pure core, I/O at the edges.** The comparator takes models and returns a `CaseResult`,
+  so it is deterministic and directly testable. Files, the database and the AI are handled
+  by `reference.py`, `db.py` and `ai_resolver.py`.
+- **A single entry point.** Pages import only `orchestrator`, so the UI can't bypass
+  validation, auditing or locking.
+- **Atomic, append-only audit.** Each state change commits in the same transaction as its
+  audit event. If the audit write fails, the whole action rolls back ("Action not saved").
+  The 820 file is written to disk only after the commit succeeds.
+- **Immutable evidence.** Original bytes are never modified. Re-uploading identical content
+  is a `REPLAY_NOOP`. The same business key with different content is a
+  `DUPLICATE_CONFLICT`. A corrected invoice is stored as a new revision, bumps
+  `evidence_version`, and supersedes older findings, AI suggestions and 820s.
+- **Safe concurrency.** Review actions carry `case_version` (optimistic locking) and an
+  idempotency key, so a double-click is a no-op and a stale screen gets "please refresh". An
+  AI suggestion from an older evidence version can't be acted on.
+- **Reproducible runs.** Every run pins `policy_version` and `reference_version` (a hash of
+  the reference files), so any past decision can be traced to the exact rules and data
+  that produced it.
+- **The catalogue is display-only.** `master_catalog.json` is synthetic. It is shown through
+  `catalog_enrichment()`, but it is never passed to the comparator and is excluded from
+  `reference_version()`.
 
 ### Parser output contract (for the X12 parser)
 
@@ -126,7 +194,10 @@ from backend.models import PurchaseOrder, POLine, Invoice, InvoiceLine, Money
 `INSUFFICIENT_EVIDENCE` · `WAIT_DOCUMENT` · `REVIEW_LINK` · `QUARANTINED` · `DUPLICATE_CONFLICT` ·
 `TECHNICAL_HOLD` · `NOT_EVALUATED` · `AI_ABSTAIN` · `AI_UNAVAILABLE`
 
-A check that was **not evaluated** is never treated as a pass or a failure.
+A check that was **not evaluated** is never treated as a pass or a failure. A case can have
+many findings. Its overall state is the most severe one, following `STATE_PRECEDENCE`:
+document problems come first, then missing evidence, then money variances, then a match.
+Every finding is kept.
 
 ### Invoice dispositions (rules doc Stage 5)
 
@@ -136,6 +207,11 @@ A check that was **not evaluated** is never treated as a pass or a failure.
 | `APPROVED_WITH_SHORT_PAY` | Blocked cash between $0.01 and $500 | Approved amount; 820 with `ADJ_*` codes |
 | `NEEDS_HUMAN_AP_REVIEW` | Blocked > $500, damaged/rejected goods, over-receipt | 820 only after an AP reviewer approves |
 | `HOLD` / `PO_HEADER_MISMATCH` / `SCHEMA_VALIDATION_ERROR` / `DUPLICATE_INVOICE_REJECTED` | Missing receipt or evidence, currency mismatch, no PO, bad file, conflicting duplicate | Nothing approved |
+| `RECEIPT_NOT_VERIFIED` | `THREE_WAY_ENABLED=false` (two-way only) | No auto-approval, no 820 |
+
+Both thresholds are configurable: `DE_MINIMIS_LINE_TOLERANCE` (default `1.00`) and
+`HIGH_VALUE_HOLD_THRESHOLD` (default `500.00`). A waived variance is still recorded as
+`waived_amount`.
 
 ## Supported scenarios
 
@@ -178,6 +254,18 @@ criteria are in [`docs/PRD.md`](docs/PRD.md).
 - **Header charges.** Freight, tax and allowances aren't modeled. Their presence holds the totals check as `NOT_EVALUATED`.
 - **watsonx.ai Lite plan.** It allows 300k tokens per month, and services are deleted after 30 days of inactivity.
 - **SQLite.** The database is local and single-process. It isn't tamper-resistant audit storage.
+- **Synthetic catalogue.** `data/reference/master_catalog.json` contains random price picks and
+  inferred pack sizes. It is shown for context only and never used for price, pack size, UOM or
+  identity decisions.
+
+## Documentation
+
+- [`docs/PRD.md`](docs/PRD.md): scope and acceptance criteria (source of truth)
+- [`docs/rules-comparison.md`](docs/rules-comparison.md): the team's 3-way reconciliation rules
+- [`docs/test_results.md`](docs/test_results.md): acceptance test results
+- [`docs/ui-theme.md`](docs/ui-theme.md): UI theme
+- [`edi-resolve-plan.md`](edi-resolve-plan.md): build plan
+- [`AGENTS.md`](AGENTS.md): conventions for contributors and coding agents
 
 ## Team
 
