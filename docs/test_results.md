@@ -10,13 +10,13 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **168 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| Full `pytest` | **170 passed**, 0 failed, 1 deselected (live watsonx integration test) |
 | E2E journeys / ingestion / edge cases (`tests/test_e2e_*.py`) | **21 passed** (bugs B1–B6 fixed) |
 | `pytest --cov=backend` | **94%** overall; lowest are ai_resolver 82% (live watsonx path), parser 88% |
 | AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
 | AT25–AT35 three-way (`tests/test_three_way.py`) | **AT25–AT32, AT34, AT35 passed**. AT33 and AT36 are not implemented. |
 | Team rules doc (`tests/test_three_way.py`, `test_disposition.py`) | Rules 1.2, 2.2, 3.1, 3.2, 4.1 and 4.2, the 820 and supersession all pass |
-| Team datasets (`tests/test_datasets.py`) | Datasets 1–5 outcomes frozen and passing; re-import is idempotent |
+| Team datasets (`tests/test_datasets.py`) | Datasets 1–5 outcomes frozen and passing; re-import is idempotent; all five importable from `data/raw` in the app (UI smoke tested) |
 | PR #1 schema tests (`tests/test_models.py`) | **23 / 23 passed** |
 | Other: parser 13, reference 11, comparator 13, AI 16, adapters 7, db 2, UI 3 | all passed |
 | `ruff check .` | All checks passed |

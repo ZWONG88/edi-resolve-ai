@@ -72,3 +72,19 @@ def test_reset_clears_sample_cases() -> None:
     assert any("Test data cleared: 1 case(s)" in s.value for s in up.success)
     assert ui_shared.get_conn().execute("SELECT COUNT(*) FROM reconciliation_cases"
                                         ).fetchone()[0] == 0
+
+
+@pytest.mark.parametrize(("folder", "metric", "value"), [
+    ("DATASET 4", "Blocked cash at risk", "$316.16"),
+    ("Dataset5", "Held (not evaluated)", "$29,138.16"),
+])
+def test_new_team_datasets_import(monkeypatch, folder: str, metric: str, value: str) -> None:
+    monkeypatch.setenv("THREE_WAY_ENABLED", "true")
+    up = AppTest.from_file("../pages/upload.py", default_timeout=60).run()
+    up.selectbox[0].set_value(folder).run()
+    next(b for b in up.button if b.label == "Import & reconcile").click().run()
+    assert not up.exception
+    assert dict((m.label, m.value) for m in up.metric)[metric] == value
+
+    review = AppTest.from_file("../pages/review.py", default_timeout=60).run()
+    assert not review.exception

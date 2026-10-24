@@ -12,7 +12,7 @@ tests currently do not.
 
 ## Status (2026-10-24): executed
 
-**Result:** 168 passed, 1 deselected (after fixing B1–B6). Coverage `backend/` is 94%, and every module is at 82% or more. `ruff` is clean.
+**Result:** 170 passed, 1 deselected (after fixing B1–B6). Coverage `backend/` is 94%, and every module is at 82% or more. `ruff` is clean.
 Run it with `.venv/bin/python -m pytest` (`pytest-cov` is installed in `.venv`).
 
 | Task | Outcome |
