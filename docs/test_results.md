@@ -1,6 +1,6 @@
 # Test Results — P0 Release Gate
 
-Recorded 2026-10-23 on branch `feature/p0-mvp` (PR #1 schemas merged), synthetic fixtures (`tests/fixtures/`), Python 3.12.7, `AI_PROVIDER=mock`.
+Recorded 2026-10-23 on branch `feature/three-way-rules`, synthetic fixtures plus the team datasets (`tests/fixtures/`), Python 3.12.7, `AI_PROVIDER=mock`.
 These are results on labeled synthetic data only. They say nothing about production
 accuracy or payment timing (PRD 22.2).
 
@@ -8,12 +8,54 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **104 passed**, 0 failed, 1 deselected (live watsonx integration test) |
-| AT01–AT24 acceptance gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
+| Full `pytest` | **142 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
+| AT25–AT35 three-way (`tests/test_three_way.py`) | **AT25–AT32, AT34, AT35 passed**. AT33 and AT36 are not implemented. |
+| Team rules doc (`tests/test_three_way.py`, `test_disposition.py`) | Rules 1.2, 2.2, 3.1, 3.2, 4.1 and 4.2, the 820 and supersession all pass |
+| Team datasets (`tests/test_datasets.py`) | Dataset 1, Dataset2 and DATASET 3 outcomes frozen and passing; re-import is idempotent |
 | PR #1 schema tests (`tests/test_models.py`) | **23 / 23 passed** |
-| Other unit tests: parser 13, reference 11, comparator 13, AI 16, db 2, UI smoke 2 | all passed |
+| Other: parser 13, reference 11, comparator 13, AI 16, adapters 7, db 2, UI 3 | all passed |
 | `ruff check .` | All checks passed |
-| `float(` in `backend/` money paths | none (only the AI timeout in seconds) |
+
+## Team datasets: per-category outcomes (three-way)
+
+| Dataset | Invoices | Outcome |
+|---|---|---|
+| Dataset 1 (PO-10001, 50 lines) | 1 | `MATCHED_3WAY` → `AUTO_APPROVED`; $36,673.98 approved, $0 blocked; 820 paid in full |
+| DATASET 3 (PO-10002, 50 lines) | 1 | `NEEDS_HUMAN_AP_REVIEW`; 7 lines flagged; $382.00 blocked |
+| Dataset2 | 60 | 25 auto-approved, 15 short pay, 10 need AP review, 10 held |
+
+**Dataset2 by category**
+
+| Category | Count | State → disposition |
+|---|---|---|
+| Clean | 10 | `MATCHED_3WAY` → `AUTO_APPROVED` |
+| CS vs EA (pack size from catalog) | 10 | `MATCHED_3WAY` → `AUTO_APPROVED` |
+| Partial billing | 5 | `PARTIAL_BILLING` → `AUTO_APPROVED` |
+| Price overcharge | 5 | `PRICE_VARIANCE` → `APPROVED_WITH_SHORT_PAY` (blocked = (inv − PO) × qty) |
+| Header total $1.00 above lines | 5 | `PRICE_VARIANCE` → `APPROVED_WITH_SHORT_PAY` ($1.00 each; see open question) |
+| Billed > accepted | 5 | `RECEIPT_VARIANCE` → `APPROVED_WITH_SHORT_PAY` |
+| Billed > ordered and over-received | 5 | `OVER_RECEIPT` → `NEEDS_HUMAN_AP_REVIEW` |
+| Damaged packaging | 5 | `RECEIPT_REVIEW` → `NEEDS_HUMAN_AP_REVIEW` |
+| Currency mismatch | 5 | `INSUFFICIENT_EVIDENCE` → `HOLD` |
+| No 861 receipt | 5 | `WAIT_RECEIPT` → `HOLD` |
+
+Dataset2 totals: invoiced $23,614.20, approved $19,101.30, blocked $529.80, held $3,983.10.
+
+**DATASET 3 flagged lines**
+
+| Line | What was found | Blocked |
+|---|---|---|
+| 7 | Billed 103, ordered fewer, accepted 83 | `ADJ_SHORTAGE` $162.60 |
+| 8 | Billed 92, accepted 82 | `ADJ_SHORTAGE` $84.20 |
+| 12 | Invoice $11.08 vs PO $9.58 | `ADJ_PRICE` $70.50 |
+| 18 | Ghost line SKU2018X, not on the PO | `ADJ_UNMAPPED` $226.40 |
+| 20 | Rejected goods, accepted 32 of 38 | `ADJ_SHORTAGE` $71.40, receiving review |
+| 25 | Line total $1,138.05 ≠ 83 × $13.35 | `ADJ_EXTENSION` $30.00 |
+| 42 | Accepted more than ordered | review only |
+
+The invoice header total is also $263.10 below the sum of its lines. The approved amount is
+capped at the header total, so blocked = $37,224.40 − $36,842.40 = $382.00.
 
 ## AT01–AT24 (actual outcomes)
 

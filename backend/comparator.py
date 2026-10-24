@@ -1,16 +1,24 @@
-"""Deterministic two-way rules engine (PRD sections 18-19). No AI, no floats, no file I/O.
+"""Deterministic reconciliation rules engine (PRD sections 18-19 + team 3-way rules doc).
+
+No AI, no floats, no file I/O.
 
 Normalization: Q_base = Q_raw * f, P_base = P_raw / (b * f), where f is verified base
 units per transaction UOM and b is the number of transaction UOMs the price covers.
 Money is rounded with ROUND_HALF_UP only at line extension.
+
+Two-way checks always run. With three_way=True the accepted receipt quantity from the
+861 ledger also caps what may be billed (rules doc 3.3), and a missing receipt is
+WAIT_RECEIPT, never a silent two-way pass. Every line gets a dollar impact and the
+invoice a disposition (backend/disposition.py).
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
+from backend import disposition as dispo
 from backend.exceptions import ReconciliationError
 from backend.models import (
     STATE_PRECEDENCE,
@@ -29,9 +37,12 @@ from backend.models import (
     ReconciliationPolicy,
     UOMConversion,
 )
+from backend.money import CENT, round_money
+from backend.receipts import ReceiptLedger
 from backend.reference import get_contract_price, get_conversion
 
-CENT = Decimal("0.01")
+__all__ = ["compare", "round_money", "case_state"]
+
 ZERO = Decimal("0")
 PASSED = CheckStatus.CHECK_PASSED
 FAILED = CheckStatus.CHECK_FAILED
@@ -39,11 +50,6 @@ NOT_EVALUATED = CheckStatus.CHECK_NOT_EVALUATED
 
 # Checks that depend on a verified UOM factor and price basis.
 PRICE_CHECKS = ("unit_price", "extension_vs_po", "invoice_extension_arithmetic")
-
-
-def round_money(value: Decimal) -> Decimal:
-    """Round to cents with ROUND_HALF_UP. Use only at line extension / totals."""
-    return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 def _s(value: Decimal | None) -> str | None:
@@ -62,12 +68,14 @@ def _signed_money(value: Decimal) -> str:
     return text if value < 0 else f"+{text}"
 
 
-def case_state(states: list[FindingStatus | None]) -> FindingStatus:
+def case_state(
+    states: list[FindingStatus | None], default: FindingStatus = FindingStatus.MATCHED_2WAY
+) -> FindingStatus:
     present = {s for s in states if s is not None}
     for state in STATE_PRECEDENCE:
         if state in present:
             return state
-    return FindingStatus.MATCHED_2WAY
+    return default
 
 
 class _Run:
@@ -93,11 +101,15 @@ class _Run:
 
 
 def _link_line(inv_line: InvoiceLine, po: PurchaseOrder) -> tuple[list[POLine], str]:
-    """Return candidate PO lines and how they were found. Never guesses."""
+    """Candidate PO lines and how they were found. Never guesses.
+
+    With a stated line reference the rules doc's composite key (line number + item)
+    must match exactly; otherwise lines link by product ID, then UPC.
+    """
     if inv_line.line_reference:
-        exact = [pl for pl in po.lines if pl.line_id == inv_line.line_reference]
-        if exact:
-            return exact, "line_reference"
+        exact = [pl for pl in po.lines if pl.line_id == inv_line.line_reference
+                 and pl.product_id == inv_line.product_id]
+        return exact, "line_number+sku"
     by_product = [pl for pl in po.lines if pl.product_id == inv_line.product_id]
     if by_product:
         return by_product, "product_id"
@@ -124,6 +136,13 @@ def _normalize_factors(
     return None
 
 
+def _line_amount(inv_line: InvoiceLine) -> Decimal:
+    if inv_line.extended_price is not None:
+        return inv_line.extended_price.amount
+    basis = inv_line.price_basis or Decimal("1")
+    return round_money(inv_line.invoiced_qty * inv_line.unit_price.amount / basis)
+
+
 def compare(
     po: PurchaseOrder,
     invoice: Invoice,
@@ -132,10 +151,15 @@ def compare(
     policy: ReconciliationPolicy | None = None,
     prior_allocated: dict[str, Decimal] | None = None,
     case_id: str = "pending",
+    receipts: ReceiptLedger | None = None,
+    three_way: bool = False,
+    prior_receipt_allocated: dict[str, Decimal] | None = None,
 ) -> CaseResult:
-    """Run every applicable P0 check. Multiple findings may coexist."""
+    """Run every applicable check. Multiple findings may coexist."""
     policy = policy or ReconciliationPolicy.baseline()
     prior_allocated = dict(prior_allocated or {})
+    prior_receipt_allocated = dict(prior_receipt_allocated or {})
+    mode = "3way" if three_way else "2way"
     run = _Run()
     run.add("po.number", po.po_id, "po_number", po.po_id)
     run.add("po.date", po.po_id, "po_date", po.order_date.isoformat())
@@ -146,12 +170,14 @@ def compare(
     header: list[Finding] = []
     lines: list[LineResult] = []
     allocations: list[dict[str, str]] = []
+    receipt_allocations: list[dict[str, str]] = []
 
     currency_ok = po.currency == invoice.currency
     header.append(
         Finding(
             finding_id=run.next_id(),
             check="currency",
+            rule_id="R_CURRENCY",
             status=PASSED if currency_ok else NOT_EVALUATED,
             result_state=None if currency_ok else FindingStatus.INSUFFICIENT_EVIDENCE,
             message="Currencies match."
@@ -164,47 +190,87 @@ def compare(
         )
     )
 
+    receipt_ready = False
+    if not three_way:
+        header.append(Finding(
+            finding_id=run.next_id(), check="receipt", rule_id="R_SHORTAGE_OVERBILL",
+            status=NOT_EVALUATED, result_state=None,
+            message="Receipt (861) verification not evaluated: two-way mode."))
+    elif receipts is None or receipts.empty:
+        header.append(Finding(
+            finding_id=run.next_id(), check="receipt", rule_id="R_SHORTAGE_OVERBILL",
+            status=NOT_EVALUATED, result_state=FindingStatus.WAIT_RECEIPT,
+            message=f"No receiving advice (861) for PO {po.po_id} yet; receipt is unknown, "
+            "not zero. Waiting for receiving evidence; no two-way fallback."))
+    else:
+        receipt_ready = True
+        run.add("rcv.ids", "receipts", "receipt_ids", ", ".join(receipts.receipt_ids))
+        header.append(Finding(
+            finding_id=run.next_id(), check="receipt", rule_id="R_HEADER_MATCH",
+            status=PASSED, result_state=None,
+            message=f"Receiving advice linked: {', '.join(receipts.receipt_ids)}.",
+            evidence_ids=["rcv.ids"]))
+
     line_amounts: list[Decimal | None] = []
     for inv_line in invoice.lines:
         line, amount = _compare_line(
             inv_line, po, invoice, uom_ref, price_ref, policy, prior_allocated,
-            currency_ok, run, allocations,
+            currency_ok, run, allocations, receipts if receipt_ready else None,
+            three_way, prior_receipt_allocated, receipt_allocations,
         )
         lines.append(line)
         line_amounts.append(amount)
 
     header.append(_totals_check(invoice, line_amounts, run))
-    header.append(
-        Finding(
-            finding_id=run.next_id(),
-            check="receipt",
-            status=NOT_EVALUATED,
-            result_state=None,
-            message="Receipt (861) verification not evaluated: two-way P0 mode.",
-        )
-    )
 
     states = [f.result_state for f in header] + [ln.status for ln in lines]
+    overall = case_state(states, FindingStatus.MATCHED_3WAY if three_way
+                         else FindingStatus.MATCHED_2WAY)
+
+    invoiced_total = (invoice.total_amount.amount if invoice.total_amount is not None
+                      else sum((a or ZERO for a in line_amounts), ZERO))
+    approved_total = blocked_total = waived_total = None
+    if all(ln.approved_amount is not None for ln in lines):
+        # Never approve more than the invoice header asks for.
+        approved_total = min(sum((ln.approved_amount.amount for ln in lines), ZERO),
+                             invoiced_total)
+        blocked_total = invoiced_total - approved_total
+        waived_total = sum((ln.waived_amount.amount for ln in lines if ln.waived_amount), ZERO)
+    disposition = dispo.classify(overall, mode, blocked_total,
+                                 policy.high_value_hold_threshold.amount)
     return CaseResult(
         case_id=case_id,
         run_id=uuid.uuid4().hex,
         case_version=1,
         po_id=po.po_id,
         invoice_id=invoice.invoice_id,
-        overall_status=case_state(states),
+        overall_status=overall,
         line_results=lines,
         policy_version=policy.policy_version,
         run_timestamp=datetime.now(timezone.utc),
         header_findings=header,
         evidence=list(run.evidence.values()),
         allocations=allocations,
+        receipt_allocations=receipt_allocations,
+        mode=mode,
+        disposition=disposition,
+        invoiced_total=Money(amount=invoiced_total),
+        approved_total=Money(amount=approved_total) if approved_total is not None else None,
+        blocked_total=Money(amount=blocked_total) if blocked_total is not None else None,
+        waived_total=Money(amount=waived_total) if waived_total is not None else None,
     )
 
 
-def _finish(line: LineResult, run: _Run) -> LineResult:
+def _finish(line: LineResult, run: _Run, impact: dict | None = None,
+            three_way: bool = False) -> LineResult:
     line.checks_not_evaluated = [f.check for f in line.findings if f.status == NOT_EVALUATED]
-    line.status = case_state([f.result_state for f in line.findings])
+    line.status = case_state([f.result_state for f in line.findings],
+                             FindingStatus.MATCHED_3WAY if three_way
+                             else FindingStatus.MATCHED_2WAY)
     line.evidence = run.subset([e for f in line.findings for e in f.evidence_ids])
+    if impact is not None:
+        for key, value in impact.items():
+            setattr(line, key, value)
     return line
 
 
@@ -219,6 +285,10 @@ def _compare_line(
     currency_ok: bool,
     run: _Run,
     allocations: list[dict[str, str]],
+    receipts: ReceiptLedger | None,
+    three_way: bool,
+    prior_receipt_allocated: dict[str, Decimal],
+    receipt_allocations: list[dict[str, str]],
 ) -> tuple[LineResult, Decimal | None]:
     iv = f"inv.{inv_line.line_id}"
     for key, value in inv_line.raw.items():
@@ -235,21 +305,31 @@ def _compare_line(
     provided_amount = inv_line.extended_price.amount if inv_line.extended_price else None
 
     candidates, how = _link_line(inv_line, po)
-    if len(candidates) != 1:
-        msg = (
-            f"No PO line matches product {inv_line.product_id} / UPC {inv_line.upc or '-'}."
-            if not candidates
-            else f"{len(candidates)} PO lines match by {how} "
-            f"({', '.join(c.line_id for c in candidates)}); no unique line reference."
-        )
+    if not candidates:
+        amount = _line_amount(inv_line)
         findings.append(
-            Finding(finding_id=run.next_id(), check="line_link", status=NOT_EVALUATED,
-                    result_state=FindingStatus.REVIEW_LINK, message=msg,
+            Finding(finding_id=run.next_id(), check="line_link", rule_id="R_UNMAPPED_ITEM",
+                    status=FAILED, result_state=FindingStatus.UNMAPPED_LINE_ITEM,
+                    message=f"Invoice line {inv_line.line_id} ({inv_line.product_id}) is not "
+                    f"on PO {po.po_id} (matched by {how}); approved $0.00, line total "
+                    "blocked.",
+                    invoice_value=str(amount),
+                    evidence_ids=[f"{iv}.line_id", f"{iv}.product_id"])
+        )
+        return _finish(line, run, dispo.unmapped_impact(amount, inv_line.line_id,
+                                                        inv_line.product_id),
+                       three_way), amount
+    if len(candidates) > 1:
+        findings.append(
+            Finding(finding_id=run.next_id(), check="line_link", rule_id="R_LINE_MAP",
+                    status=NOT_EVALUATED, result_state=FindingStatus.REVIEW_LINK,
+                    message=f"{len(candidates)} PO lines match by {how} "
+                    f"({', '.join(c.line_id for c in candidates)}); no unique line reference.",
                     evidence_ids=[f"{iv}.product_id"])
         )
         for check in ("quantity", *PRICE_CHECKS):
             findings.append(_blocked(run, check, "line link is not unique"))
-        return _finish(line, run), provided_amount
+        return _finish(line, run, three_way=three_way), provided_amount
 
     po_line = candidates[0]
     pv = f"po.{po_line.line_id}"
@@ -259,7 +339,8 @@ def _compare_line(
     line.po_line_id = po_line.line_id
     line.po_value_raw = dict(po_line.raw)
     findings.append(
-        Finding(finding_id=run.next_id(), check="line_link", status=PASSED, result_state=None,
+        Finding(finding_id=run.next_id(), check="line_link", rule_id="R_LINE_MAP",
+                status=PASSED, result_state=None,
                 message=f"Linked to PO line {po_line.line_id} by {how}.",
                 evidence_ids=[f"{pv}.line_id", f"{iv}.line_id"])
     )
@@ -277,8 +358,8 @@ def _compare_line(
     if factors is None:
         findings.append(
             Finding(
-                finding_id=run.next_id(), check="uom_conversion", status=NOT_EVALUATED,
-                result_state=FindingStatus.INSUFFICIENT_EVIDENCE,
+                finding_id=run.next_id(), check="uom_conversion", rule_id="R_UOM_NORM",
+                status=NOT_EVALUATED, result_state=FindingStatus.INSUFFICIENT_EVIDENCE,
                 message=conflict
                 or f"No verified {po_line.uom}->{inv_line.uom} conversion for "
                 f"{po_line.product_id}; no factor guessed.",
@@ -288,17 +369,18 @@ def _compare_line(
         )
         for check in ("quantity", *PRICE_CHECKS):
             findings.append(_blocked(run, check, "UOM conversion missing or conflicting"))
-        return _finish(line, run), provided_amount
+        return _finish(line, run, three_way=three_way), provided_amount
 
     f_po, f_inv, base_uom = factors
     if f_po != 1:
         run.add(f"ref.uom.{po_line.product_id}", "reference:uom_conversions", "factor",
                 f"1 {po_line.uom} = {_s(f_po)} {base_uom}")
     findings.append(
-        Finding(finding_id=run.next_id(), check="uom_conversion", status=PASSED,
-                result_state=None,
+        Finding(finding_id=run.next_id(), check="uom_conversion", rule_id="R_UOM_NORM",
+                status=PASSED, result_state=None,
                 message=f"Normalized to base UOM {base_uom} "
-                f"(f_po={_s(f_po)}, f_inv={_s(f_inv)}).",
+                f"(f_po={_s(f_po)}, f_inv={_s(f_inv)})"
+                + (" — UOM_NORMALIZED." if f_po != 1 else "."),
                 po_value=po_line.uom, invoice_value=inv_line.uom,
                 evidence_ids=[f"{pv}.uom", f"{iv}.uom"]
                 + ([f"ref.uom.{po_line.product_id}"] if f_po != 1 else []))
@@ -311,18 +393,27 @@ def _compare_line(
     line.po_value_normalized = {"quantity": _s(q_po), "uom": base_uom}
     line.invoice_value_normalized = {"quantity": _s(q_inv), "uom": base_uom}
 
+    po_remaining = q_po - prior_allocated.get(po_line.line_id, ZERO)
     _quantity_check(po_line, q_po, q_inv, base_uom, policy, prior_allocated,
                     run, line, allocations, pv, iv)
 
+    accepted_available: Decimal | None = None
+    receipt_blocked = False
+    if three_way:
+        accepted_available, receipt_blocked = _receipt_check(
+            po_line, q_po, q_inv, base_uom, uom_ref, po.order_date, receipts,
+            prior_receipt_allocated, run, line, receipt_allocations, iv)
+
     # Price basis (b) and price checks
     amount = provided_amount
+    impact = None
     basis_known = po_line.price_basis is not None and inv_line.price_basis is not None
     if not basis_known:
         missing = [n for n, ln in (("PO", po_line), ("invoice", inv_line))
                    if ln.price_basis is None]
         findings.append(
-            Finding(finding_id=run.next_id(), check="price_basis", status=NOT_EVALUATED,
-                    result_state=FindingStatus.INSUFFICIENT_EVIDENCE,
+            Finding(finding_id=run.next_id(), check="price_basis", rule_id="R_PRICE_VARIANCE",
+                    status=NOT_EVALUATED, result_state=FindingStatus.INSUFFICIENT_EVIDENCE,
                     message=f"Price basis missing on {' and '.join(missing)} line; "
                     "price comparison blocked.",
                     evidence_ids=[f"{pv}.unit_price", f"{iv}.unit_price"])
@@ -341,8 +432,112 @@ def _compare_line(
         line.invoice_value_normalized["unit_price"] = _s(p_inv)
         amount = _price_checks(inv_line, p_po, p_inv, q_inv, base_uom, policy,
                                run, line, pv, iv)
+        if not (three_way and receipt_blocked):
+            impact = dispo.line_impact(
+                billed_qty=q_inv, inv_price=p_inv, po_price=p_po, invoiced_amount=amount,
+                po_remaining=po_remaining, accepted_available=accepted_available,
+                uom=base_uom, de_minimis=policy.de_minimis_line_tolerance.amount,
+            )
+            if impact["de_minimis"]:
+                findings.append(Finding(
+                    finding_id=run.next_id(), check="de_minimis", rule_id="R_TOLERANCE_CHECK",
+                    status=PASSED, result_state=None,
+                    message=f"Line variance ${impact['waived_amount']} is within the "
+                    f"${policy.de_minimis_line_tolerance} de minimis tolerance: "
+                    "DE_MINIMIS_PASSED (variance still recorded)."))
+    if accepted_available is not None:
+        line.accepted_qty = max(accepted_available, ZERO)
+    return _finish(line, run, impact, three_way), amount
 
-    return _finish(line, run), amount
+
+def _receipt_check(
+    po_line: POLine,
+    q_po: Decimal,
+    q_inv: Decimal,
+    base_uom: str,
+    uom_ref: list[UOMConversion],
+    on_date: date,
+    receipts: ReceiptLedger | None,
+    prior_receipt_allocated: dict[str, Decimal],
+    run: _Run,
+    line: LineResult,
+    receipt_allocations: list[dict[str, str]],
+    iv: str,
+) -> tuple[Decimal | None, bool]:
+    """Rule 3.3 with accepted quantity. Returns (accepted available, evidence missing).
+
+    Rejected/damaged goods and over-receipts are flagged for review but still allow the
+    dollar impact to be computed on the accepted quantity; only missing or ambiguous
+    receiving evidence prevents it.
+    """
+    def add(status: CheckStatus, state: FindingStatus | None, message: str, **kw) -> None:
+        line.findings.append(Finding(finding_id=run.next_id(), check="receipt",
+                                     rule_id="R_SHORTAGE_OVERBILL", status=status,
+                                     result_state=state, message=message, **kw))
+
+    if receipts is None:
+        add(NOT_EVALUATED, None, "Receipt check waiting for receiving advice.")
+        return None, True
+    lid = po_line.line_id
+    if lid in receipts.ambiguous:
+        add(NOT_EVALUATED, FindingStatus.INSUFFICIENT_EVIDENCE,
+            f"Receipt evidence for line {lid} is ambiguous: {receipts.ambiguous[lid]}.")
+        return None, True
+    total = receipts.lines.get(lid)
+    if total is None:
+        add(NOT_EVALUATED, FindingStatus.WAIT_RECEIPT,
+            f"No receipt line for PO line {lid} yet; receipt unknown, not zero.")
+        return None, True
+    if total.product_id != po_line.product_id:
+        add(NOT_EVALUATED, FindingStatus.REVIEW_LINK,
+            f"Receipt line {lid} is item {total.product_id}, PO line is "
+            f"{po_line.product_id}; receipt not linked.")
+        return None, True
+    try:
+        factor = get_conversion(po_line.product_id, total.uom, base_uom, uom_ref, on_date)
+    except ReconciliationError as exc:
+        factor, _ = None, exc
+    if factor is None:
+        add(NOT_EVALUATED, FindingStatus.INSUFFICIENT_EVIDENCE,
+            f"No verified {total.uom}->{base_uom} conversion for the receipt quantity.")
+        return None, True
+
+    ev = f"rcv.{lid}"
+    source = ", ".join(total.receipt_ids)
+    accepted = total.accepted * factor
+    run.add(f"{ev}.accepted_quantity", source, "accepted_quantity", _s(total.accepted),
+            f"{_s(accepted)} {base_uom}")
+    run.add(f"{ev}.received_quantity", source, "received_quantity", _s(total.received))
+    prior = prior_receipt_allocated.get(lid, ZERO)
+    available = accepted - prior
+
+    if total.review_reasons:
+        add(FAILED, FindingStatus.RECEIPT_REVIEW,
+            f"Receiving reported {', '.join(total.review_reasons)} on line {lid}: only "
+            f"accepted goods are billable; receiving team must verify.",
+            evidence_ids=[f"{ev}.accepted_quantity", f"{ev}.received_quantity"])
+    if accepted > q_po:
+        add(FAILED, FindingStatus.OVER_RECEIPT,
+            f"Accepted {_s(accepted)} {base_uom} exceeds the PO quantity {_s(q_po)}; extra "
+            "receipts do not authorize extra billing.",
+            evidence_ids=[f"{ev}.accepted_quantity"])
+    if q_inv > available:
+        shortfall = q_inv - available
+        add(FAILED, FindingStatus.RECEIPT_VARIANCE,
+            f"SHORTAGE_OVERBILL: billed {_s(q_inv)} {base_uom} but only {_s(available)} "
+            f"accepted and unallocated (accepted {_s(accepted)}, already billed "
+            f"{_s(prior)}); short {_s(shortfall)}.",
+            po_value=_s(available), invoice_value=_s(q_inv), delta=_signed(shortfall),
+            evidence_ids=[f"{ev}.accepted_quantity", f"{iv}.quantity"])
+    else:
+        add(PASSED, None,
+            f"Billed {_s(q_inv)} {base_uom} covered by accepted receipt "
+            f"({_s(available)} available).",
+            evidence_ids=[f"{ev}.accepted_quantity", f"{iv}.quantity"])
+    claim = max(min(q_inv, available), ZERO)
+    if claim > 0:
+        receipt_allocations.append({"po_line": lid, "quantity": _s(claim), "uom": base_uom})
+    return available, False
 
 
 def _blocked(run: _Run, check: str, reason: str) -> Finding:
@@ -409,7 +604,8 @@ def _quantity_check(
     line.delta_qty = q_inv - q_po
     common = dict(po_value=_s(q_po), invoice_value=_s(q_inv), normalized_po_value=_s(q_po),
                   normalized_invoice_value=_s(cumulative),
-                  tolerance_applied=_s(policy.qty_tolerance), evidence_ids=ev)
+                  tolerance_applied=_s(policy.qty_tolerance), evidence_ids=ev,
+                  rule_id="R_PO_QUANTITY")
     if over > policy.qty_tolerance:
         line.findings.append(
             Finding(finding_id=run.next_id(), check="quantity", status=FAILED,
@@ -456,18 +652,22 @@ def _price_checks(
     pv: str,
     iv: str,
 ) -> Decimal:
+    """Rule 3.2: an invoice price above the PO price is a variance; below is informational."""
     delta = p_inv - p_po
     tolerance = max(policy.price_abs_tolerance.amount, abs(p_po) * policy.price_rel_tolerance)
-    ok = abs(delta) <= tolerance
+    over = delta > tolerance
+    under = delta < -tolerance
     line.delta["unit_price"] = _signed(delta)
     line.delta_price = Money(amount=delta)
     line.findings.append(
-        Finding(finding_id=run.next_id(), check="unit_price",
-                status=PASSED if ok else FAILED,
-                result_state=None if ok else FindingStatus.PRICE_VARIANCE,
+        Finding(finding_id=run.next_id(), check="unit_price", rule_id="R_PRICE_VARIANCE",
+                status=FAILED if over else PASSED,
+                result_state=FindingStatus.PRICE_VARIANCE if over else None,
                 message=f"Normalized unit price PO {_s(p_po)} vs invoice {_s(p_inv)} per "
                 f"{base_uom}; delta {_signed(delta)}, tolerance {_s(tolerance)}"
-                + (" (within tolerance)." if ok else " (exceeds tolerance)."),
+                + (" (invoice above PO price)." if over
+                   else " (invoice below PO price; informational, paid as invoiced)."
+                   if under else " (within tolerance)."),
                 po_value=_s(p_po), invoice_value=_s(p_inv),
                 normalized_po_value=_s(p_po), normalized_invoice_value=_s(p_inv),
                 delta=_signed(delta),
@@ -483,9 +683,9 @@ def _price_checks(
     line.delta["extension"] = _signed_money(ext_delta)
     line.po_value_normalized["extension"] = str(expected_ext)
     line.invoice_value_normalized["extension"] = str(actual_ext)
-    ext_ok = abs(ext_delta) <= round_money(q_inv * tolerance)
+    ext_ok = ext_delta <= round_money(q_inv * tolerance)
     line.findings.append(
-        Finding(finding_id=run.next_id(), check="extension_vs_po",
+        Finding(finding_id=run.next_id(), check="extension_vs_po", rule_id="R_PRICE_VARIANCE",
                 status=PASSED if ext_ok else FAILED,
                 result_state=None if ext_ok else FindingStatus.PRICE_VARIANCE,
                 message=f"Expected extension at PO price {expected_ext}; invoice extension "
@@ -503,6 +703,7 @@ def _price_checks(
     arith_ok = provided == computed_inv_ext
     line.findings.append(
         Finding(finding_id=run.next_id(), check="invoice_extension_arithmetic",
+                rule_id="R_EXTENSION",
                 status=PASSED if arith_ok else FAILED,
                 result_state=None if arith_ok else FindingStatus.PRICE_VARIANCE,
                 message=f"Invoice extension {provided} vs invoice qty x price "
@@ -518,8 +719,8 @@ def _totals_check(invoice: Invoice, line_amounts: list[Decimal | None], run: _Ru
     if invoice.charges:
         kinds = ", ".join(sorted({str(c.get("type", "unknown")) for c in invoice.charges}))
         run.add("inv.charges", invoice.invoice_id, "charges", kinds)
-        return Finding(finding_id=run.next_id(), check="invoice_total", status=NOT_EVALUATED,
-                       result_state=FindingStatus.NOT_EVALUATED,
+        return Finding(finding_id=run.next_id(), check="invoice_total", rule_id="R_INVOICE_TOTAL",
+                       status=NOT_EVALUATED, result_state=FindingStatus.NOT_EVALUATED,
                        message=f"Unsupported header charges ({kinds}); invoice total not "
                        "evaluated and held for review. No silent totals pass.",
                        evidence_ids=["inv.charges"])
@@ -532,7 +733,7 @@ def _totals_check(invoice: Invoice, line_amounts: list[Decimal | None], run: _Ru
     line_sum = round_money(sum(line_amounts, ZERO))  # type: ignore[arg-type]
     delta = total - line_sum
     ok = delta == 0
-    return Finding(finding_id=run.next_id(), check="invoice_total",
+    return Finding(finding_id=run.next_id(), check="invoice_total", rule_id="R_INVOICE_TOTAL",
                    status=PASSED if ok else FAILED,
                    result_state=None if ok else FindingStatus.PRICE_VARIANCE,
                    message=f"Invoice total {total} vs sum of lines {line_sum}"

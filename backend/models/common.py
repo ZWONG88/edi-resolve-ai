@@ -48,20 +48,21 @@ class FindingStatus(StrEnum):
     """
 
     MATCHED_2WAY = "MATCHED_2WAY"               # All applicable P0 checks pass
-    MATCHED_3WAY = "MATCHED_3WAY"               # Reserved for P2; never emitted in P0
+    MATCHED_3WAY = "MATCHED_3WAY"               # All 2-way checks + accepted receipt cover it
     PRICE_VARIANCE = "PRICE_VARIANCE"            # Normalized unit price differs beyond tolerance
     QUANTITY_VARIANCE = "QUANTITY_VARIANCE"      # Cumulative invoice qty exceeds PO authorization
     PARTIAL_BILLING = "PARTIAL_BILLING"          # Below remaining PO balance; allocation recorded
     INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # Reference missing/expired/contradictory
     WAIT_DOCUMENT = "WAIT_DOCUMENT"              # PO or required document not found
-    WAIT_RECEIPT = "WAIT_RECEIPT"               # Reserved for P2; never emitted in P0
+    WAIT_RECEIPT = "WAIT_RECEIPT"               # 3-way on; no valid receipt for the line yet
     REVIEW_LINK = "REVIEW_LINK"                 # Ambiguous line match; analyst selects
-    RECEIPT_VARIANCE = "RECEIPT_VARIANCE"        # Reserved for P2; never emitted in P0
-    OVER_RECEIPT = "OVER_RECEIPT"               # Reserved for P2; never emitted in P0
-    RECEIPT_REVIEW = "RECEIPT_REVIEW"            # Reserved for P2; never emitted in P0
+    RECEIPT_VARIANCE = "RECEIPT_VARIANCE"        # Billed > accepted receipt (SHORTAGE_OVERBILL)
+    OVER_RECEIPT = "OVER_RECEIPT"               # Accepted receipt exceeds the PO quantity
+    RECEIPT_REVIEW = "RECEIPT_REVIEW"            # Rejected/damaged goods or receiving review
     NOT_EVALUATED = "NOT_EVALUATED"              # Check skipped — NOT the same as CHECK_FAILED
     CHECK_FAILED = "CHECK_FAILED"               # Check ran and definitively failed
     TECHNICAL_HOLD = "TECHNICAL_HOLD"            # Internal error; safe retry required
+    UNMAPPED_LINE_ITEM = "UNMAPPED_LINE_ITEM"    # Invoice line not on the PO (R_UNMAPPED_ITEM)
     QUARANTINED = "QUARANTINED"                  # Case for a document that failed validation
     DUPLICATE_CONFLICT = "DUPLICATE_CONFLICT"    # Case held: same business key, new content
 
@@ -85,6 +86,7 @@ class ReviewStatus(StrEnum):
     RESOLUTION_APPROVED = "RESOLUTION_APPROVED"
     RECOMMENDATION_REJECTED = "RECOMMENDATION_REJECTED"
     ESCALATED = "ESCALATED"
+    AUTO_APPROVED = "AUTO_APPROVED"  # Approved by the rules engine (3-way, rules doc 5.1)
 
 
 class ReviewActionType(StrEnum):

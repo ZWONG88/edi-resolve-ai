@@ -1,14 +1,23 @@
 # EDIResolve AI
 
-AI-assisted discrepancy detection and resolution for EDI purchase orders (850) and invoices (810).
+AI-assisted three-way reconciliation of EDI purchase orders (850), receiving advice (861) and
+invoices (810).
 **SpartHill Hacks 2026 · IBM AI Challenge**
 
 Retailers and suppliers lose time and money when invoices don't match purchase orders: wrong
 prices, case-vs-each unit mix-ups, over-billing across several invoices, malformed files.
-EDIResolve AI reconciles each invoice against its PO with a **deterministic rules engine**, then
-uses **IBM Granite on watsonx.ai** to explain the findings for a human reviewer. Every
-explanation cites the evidence it relies on. The AI never does the math and never makes the
-decision.
+EDIResolve AI reconciles each invoice against its PO **and the goods actually accepted at the
+dock** with a **deterministic rules engine** that follows the team's
+[3-way reconciliation rules](docs/rules-comparison.md):
+
+- **Clean invoices are auto-approved.**
+- **Discrepancies are highlighted** with a suggested correction and the dollar amount
+  blocked. Discrepancies include price overcharges, short shipments, ghost lines, unit
+  mix-ups and math errors.
+- **A corrected EDI 820 remittance file is generated.** It is never transmitted.
+
+**IBM Granite on watsonx.ai** explains the findings for a human reviewer, citing evidence. The
+AI never does the math and never makes the decision.
 
 ## Quickstart (no keys needed)
 
@@ -18,14 +27,33 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app runs fully offline with a rules-based AI mock (`AI_PROVIDER=mock`). Open **Upload & Process**, pick a
-sample scenario (for example *AT04 · Price variance*), click **Process**, then open
-**Exception Review**.
+The app runs fully offline with a rules-based AI mock (`AI_PROVIDER=mock`). Open
+**Upload & Process**, choose **Import dataset folder**, pick a dataset and click
+**Import & reconcile**:
+
+- **Dataset 1:** a clean 50-line PO. It auto-approves.
+- **Dataset2:** 60 invoices that cover every rule.
+- **DATASET 3:** a 50-line PO with seeded discrepancies.
+
+Then open **Exception Review** to see the highlighted lines, suggested corrections and the
+820 download.
+
+### Adding your own data
+
+Put a folder of team-format EDI JSON files under `data/raw/<name>/`. A file may hold one
+document or an array of documents. Supported types:
+
+- `transaction_type` `"850"` (purchase order)
+- `"861"` (receiving advice), with `received_quantity` / `accepted_quantity` / `rejected_quantity`
+- `"810"` (invoice), with `line_total` and `invoice_total`
+
+Lines are matched by `line_number` + `buyer_sku`. Pack sizes for case/each conversions go in
+`data/reference/uom_conversions.json`. The folder then appears in the import picker.
 
 Run the tests:
 
 ```bash
-pytest                 # unit + AT01–AT24 acceptance gate + UI smoke tests
+pytest                 # unit, AT01–AT35 acceptance, team datasets, UI smoke tests
 pytest -m integration  # live watsonx.ai call (needs .env keys)
 ruff check .
 ```
@@ -89,11 +117,21 @@ from backend.models import PurchaseOrder, POLine, Invoice, InvoiceLine, Money
 
 ### Result states
 
-`MATCHED_2WAY` · `PRICE_VARIANCE` · `QUANTITY_VARIANCE` · `PARTIAL_BILLING` ·
-`INSUFFICIENT_EVIDENCE` · `WAIT_DOCUMENT` · `REVIEW_LINK` · `QUARANTINED` ·
-`DUPLICATE_CONFLICT` · `TECHNICAL_HOLD` · `NOT_EVALUATED` · `AI_ABSTAIN` · `AI_UNAVAILABLE`
+`MATCHED_3WAY` · `MATCHED_2WAY` · `PRICE_VARIANCE` · `QUANTITY_VARIANCE` · `RECEIPT_VARIANCE` ·
+`RECEIPT_REVIEW` · `OVER_RECEIPT` · `UNMAPPED_LINE_ITEM` · `PARTIAL_BILLING` · `WAIT_RECEIPT` ·
+`INSUFFICIENT_EVIDENCE` · `WAIT_DOCUMENT` · `REVIEW_LINK` · `QUARANTINED` · `DUPLICATE_CONFLICT` ·
+`TECHNICAL_HOLD` · `NOT_EVALUATED` · `AI_ABSTAIN` · `AI_UNAVAILABLE`
 
 A check that was **not evaluated** is never treated as a pass or a failure.
+
+### Invoice dispositions (rules doc Stage 5)
+
+| Disposition | When | Payment |
+|---|---|---|
+| `AUTO_APPROVED` | Three-way clean (variances ≤ $1.00 waived) | Full amount; 820 generated |
+| `APPROVED_WITH_SHORT_PAY` | Blocked cash between $0.01 and $500 | Approved amount; 820 with `ADJ_*` codes |
+| `NEEDS_HUMAN_AP_REVIEW` | Blocked > $500, damaged/rejected goods, over-receipt | 820 only after an AP reviewer approves |
+| `HOLD` / `PO_HEADER_MISMATCH` / `SCHEMA_VALIDATION_ERROR` / `DUPLICATE_INVOICE_REJECTED` | Missing receipt or evidence, currency mismatch, no PO, bad file, conflicting duplicate | Nothing approved |
 
 ## Supported scenarios
 
@@ -123,12 +161,15 @@ criteria are in [`docs/PRD.md`](docs/PRD.md).
 - AI output is labeled **"AI Suggestion — requires human review"**.
 - Every approve, reject or escalate needs a reason. Escalation needs an accountable owner. Stale actions are refused.
 - If an audit write fails, the action is rolled back and the reviewer sees **"Action not saved"**.
-- Approval never turns a case into `MATCHED`. Nothing here pays an invoice or changes an external system.
+- Approval never turns a case into `MATCHED`. Auto-approval happens only on a full three-way match.
+- EDI 820 files are **generated, never transmitted**. Nothing here moves money or changes an external system.
+- Billing is capped at the **accepted** receipt quantity. Damaged or rejected goods go to receiving review.
 
 ## Known limitations
 
-- **Synthetic data only.** Fixtures are hand-labeled JSON that stands in for EDI 850/810. Real X12 parsing is out of scope.
-- **Two-way only.** P2 three-way receipt (861) matching is disabled (`THREE_WAY_ENABLED=false`). 861 files are stored and labeled as unsupported.
+- **JSON, not raw X12.** The team datasets are JSON renderings of 850/810/861. Raw X12 segment parsing is out of scope.
+- **Derived pack sizes.** The case/each factors for the Dataset2 SKUs were derived from the data and still need verification.
+- **Receipt corrections and concurrency.** Verified 861 corrections that replace an earlier quantity (PRD AT33), and simultaneous approvals racing for the same receipt (AT36), aren't implemented yet.
 - **Single tenant.** Partner isolation comes from scoping PO lookup to buyer + supplier + PO number. There is no authentication or role-based access.
 - **Header charges.** Freight, tax and allowances aren't modeled. Their presence holds the totals check as `NOT_EVALUATED`.
 - **watsonx.ai Lite plan.** It allows 300k tokens per month, and services are deleted after 30 days of inactivity.

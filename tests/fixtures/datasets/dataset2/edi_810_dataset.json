@@ -1,0 +1,2642 @@
+[
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0001",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0001",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      }
+    ],
+    "subtotal": 114.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 114.6,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0002",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0002",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 38,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 77.9
+      }
+    ],
+    "subtotal": 351.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 351.2,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0003",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0003",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      }
+    ],
+    "subtotal": 655.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 655.2,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0004",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0004",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      }
+    ],
+    "subtotal": 343.9,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 343.9,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0005",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0005",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 44,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 90.2
+      }
+    ],
+    "subtotal": 620,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 620,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0006",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0006",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      }
+    ],
+    "subtotal": 75,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 75,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0007",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0007",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      }
+    ],
+    "subtotal": 273.3,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 273.3,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0008",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0008",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 40,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 82
+      }
+    ],
+    "subtotal": 783.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 783.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0009",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0009",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      }
+    ],
+    "subtotal": 294.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 294.4,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0010",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0010",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      }
+    ],
+    "subtotal": 529.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 529.8,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0011",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0011",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.45,
+        "line_total": 87
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 36,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 73.8
+      }
+    ],
+    "subtotal": 200.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 200.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0012",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0012",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.8,
+        "line_total": 259.2
+      }
+    ],
+    "subtotal": 259.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 259.2,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0013",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0013",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 2.15,
+        "line_total": 722.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      }
+    ],
+    "subtotal": 768.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 768.6,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0014",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0014",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.5,
+        "line_total": 320
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 42,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 86.1
+      }
+    ],
+    "subtotal": 455.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 455.6,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0015",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0015",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.85,
+        "line_total": 513
+      }
+    ],
+    "subtotal": 513,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 513,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0016",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0016",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.15,
+        "line_total": 69
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      }
+    ],
+    "subtotal": 108.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 108.6,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0017",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0017",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.5,
+        "line_total": 216
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 38,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 77.9
+      }
+    ],
+    "subtotal": 336.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 336.8,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0018",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0018",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.85,
+        "line_total": 621.6
+      }
+    ],
+    "subtotal": 621.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 621.6,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0019",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0019",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.2,
+        "line_total": 281.6
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      }
+    ],
+    "subtotal": 331.1,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 331.1,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0020",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0020",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.55,
+        "line_total": 459
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 44,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 90.2
+      }
+    ],
+    "subtotal": 602,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 602,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0021",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0021",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 66,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 82.5
+      }
+    ],
+    "subtotal": 82.5,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 82.5,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0022",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0022",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 156,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 249.6
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      }
+    ],
+    "subtotal": 292.5,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 292.5,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0023",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0023",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 360,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 702
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 40,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 82
+      }
+    ],
+    "subtotal": 830.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 830.2,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0024",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0024",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 136,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 312.8
+      }
+    ],
+    "subtotal": 312.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 312.8,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0025",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0025",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 190,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 503.5
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      }
+    ],
+    "subtotal": 556.3,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 556.3,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0026",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0026",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 37.5
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 36,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 73.8
+      }
+    ],
+    "subtotal": 150.9,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 150.9,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0027",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0027",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 72,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 115.2
+      }
+    ],
+    "subtotal": 115.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 115.2,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0028",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0028",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 168,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 327.6
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      }
+    ],
+    "subtotal": 373.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 373.8,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0029",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0029",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 64,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 147.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 42,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 86.1
+      }
+    ],
+    "subtotal": 282.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 282.8,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0030",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0030",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 90,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 238.5
+      }
+    ],
+    "subtotal": 238.5,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 238.5,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0031",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0031",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      }
+    ],
+    "subtotal": 114.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 114.6,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0032",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0032",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 38,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 77.9
+      }
+    ],
+    "subtotal": 351.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 351.2,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0033",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0033",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      }
+    ],
+    "subtotal": 655.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 655.2,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0034",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0034",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      }
+    ],
+    "subtotal": 343.9,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 343.9,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0035",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0035",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 44,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 90.2
+      }
+    ],
+    "subtotal": 620,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 620,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0036",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0036",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      }
+    ],
+    "subtotal": 75,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 75,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0037",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0037",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      }
+    ],
+    "subtotal": 273.3,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 273.3,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0038",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0038",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 40,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 82
+      }
+    ],
+    "subtotal": 783.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 783.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0039",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0039",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      }
+    ],
+    "subtotal": 294.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 294.4,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0040",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0040",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      }
+    ],
+    "subtotal": 529.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 529.8,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0041",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0041",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 36,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 73.8
+      }
+    ],
+    "subtotal": 188.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 188.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0042",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0042",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      }
+    ],
+    "subtotal": 230.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 230.4,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0043",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0043",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      }
+    ],
+    "subtotal": 701.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 701.4,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0044",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0044",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 42,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 86.1
+      }
+    ],
+    "subtotal": 430,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 430,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0045",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0045",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      }
+    ],
+    "subtotal": 477,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 477,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0046",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0046",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      }
+    ],
+    "subtotal": 114.6,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 115.6,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0047",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0047",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 38,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 77.9
+      }
+    ],
+    "subtotal": 351.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 352.2,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0048",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0048",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      }
+    ],
+    "subtotal": 655.2,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 656.2,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0049",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0049",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      }
+    ],
+    "subtotal": 343.9,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 344.9,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0050",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0050",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 44,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 90.2
+      }
+    ],
+    "subtotal": 620,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 621,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0051",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0051",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "EUR",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      }
+    ],
+    "subtotal": 75,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 75,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0052",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0052",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "EUR",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 26,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 42.9
+      }
+    ],
+    "subtotal": 273.3,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 273.3,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0053",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0053",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "EUR",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 40,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 82
+      }
+    ],
+    "subtotal": 783.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 783.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0054",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0054",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "EUR",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      }
+    ],
+    "subtotal": 294.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 294.4,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0055",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0055",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "EUR",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 32,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 52.8
+      }
+    ],
+    "subtotal": 529.8,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 529.8,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0056",
+    "invoice_date": "2026-09-04",
+    "purchase_order_number": "PO-DEMO-0056",
+    "purchase_order_date": "2026-09-01",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0001",
+        "vendor_sku": "VEND0001",
+        "description": "Canned Chickpeas",
+        "invoiced_quantity": 60,
+        "unit_of_measure": "EA",
+        "unit_price": 1.25,
+        "line_total": 75
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 24,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 39.6
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 36,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 73.8
+      }
+    ],
+    "subtotal": 188.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 188.4,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0057",
+    "invoice_date": "2026-09-08",
+    "purchase_order_number": "PO-DEMO-0057",
+    "purchase_order_date": "2026-09-05",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0002",
+        "vendor_sku": "VEND0002",
+        "description": "Oat Cereal",
+        "invoiced_quantity": 144,
+        "unit_of_measure": "EA",
+        "unit_price": 1.6,
+        "line_total": 230.4
+      }
+    ],
+    "subtotal": 230.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 230.4,
+    "total_line_items": 1
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0058",
+    "invoice_date": "2026-09-12",
+    "purchase_order_number": "PO-DEMO-0058",
+    "purchase_order_date": "2026-09-09",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-03",
+      "name": "DEMO RETAILER 03"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0003",
+        "vendor_sku": "VEND0003",
+        "description": "Tomato Sauce",
+        "invoiced_quantity": 336,
+        "unit_of_measure": "EA",
+        "unit_price": 1.95,
+        "line_total": 655.2
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 28,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 46.2
+      }
+    ],
+    "subtotal": 701.4,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 701.4,
+    "total_line_items": 2
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0059",
+    "invoice_date": "2026-09-16",
+    "purchase_order_number": "PO-DEMO-0059",
+    "purchase_order_date": "2026-09-13",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-02",
+      "name": "DEMO SUPPLIER 02"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-01",
+      "name": "DEMO RETAILER 01"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0004",
+        "vendor_sku": "VEND0004",
+        "description": "Sparkling Water",
+        "invoiced_quantity": 128,
+        "unit_of_measure": "EA",
+        "unit_price": 2.3,
+        "line_total": 294.4
+      },
+      {
+        "line_number": 2,
+        "buyer_sku": "SKU0007",
+        "vendor_sku": "VEND0007",
+        "description": "Green Tea",
+        "invoiced_quantity": 30,
+        "unit_of_measure": "EA",
+        "unit_price": 1.65,
+        "line_total": 49.5
+      },
+      {
+        "line_number": 3,
+        "buyer_sku": "SKU0008",
+        "vendor_sku": "VEND0008",
+        "description": "Pasta Spirals",
+        "invoiced_quantity": 42,
+        "unit_of_measure": "EA",
+        "unit_price": 2.05,
+        "line_total": 86.1
+      }
+    ],
+    "subtotal": 430,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 430,
+    "total_line_items": 3
+  },
+  {
+    "transaction_type": "810",
+    "x12_version": "004010",
+    "invoice_number": "INV-DEMO-0060",
+    "invoice_date": "2026-09-20",
+    "purchase_order_number": "PO-DEMO-0060",
+    "purchase_order_date": "2026-09-17",
+    "supplier": {
+      "id": "DEMO-SUPPLIER-01",
+      "name": "DEMO SUPPLIER 01"
+    },
+    "buyer": {
+      "id": "DEMO-BUYER-02",
+      "name": "DEMO RETAILER 02"
+    },
+    "currency": "USD",
+    "line_items": [
+      {
+        "line_number": 1,
+        "buyer_sku": "SKU0005",
+        "vendor_sku": "VEND0005",
+        "description": "Rice Crackers",
+        "invoiced_quantity": 180,
+        "unit_of_measure": "EA",
+        "unit_price": 2.65,
+        "line_total": 477
+      }
+    ],
+    "subtotal": 477,
+    "tax": 0,
+    "shipping": 0,
+    "invoice_total": 477,
+    "total_line_items": 1
+  }
+]

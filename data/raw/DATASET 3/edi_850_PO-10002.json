@@ -1,0 +1,530 @@
+{
+  "transaction_type": "850",
+  "x12_version": "004010",
+  "po_number": "PO-10002",
+  "po_date": "2026-10-24",
+  "requested_delivery_date": "2026-11-20",
+  "department": "002",
+  "buyer": {
+    "id": "BUYER001",
+    "name": "DEMO RETAILER"
+  },
+  "supplier": {
+    "id": "SUP002",
+    "name": "FRESH MARKET SUPPLIER"
+  },
+  "ship_to": {
+    "id": "DC002",
+    "name": "EAST BAY DISTRIBUTION CENTER",
+    "address": {
+      "street": "2000 LOGISTICS PARKWAY",
+      "city": "OAKLAND",
+      "state": "CA",
+      "postal_code": "94601",
+      "country": "US"
+    }
+  },
+  "line_items": [
+    {
+      "line_number": 1,
+      "buyer_sku": "SKU2001",
+      "vendor_sku": "VEND2001",
+      "description": "Fresh Market Product 1",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 6.39,
+      "currency": "USD"
+    },
+    {
+      "line_number": 2,
+      "buyer_sku": "SKU2002",
+      "vendor_sku": "VEND2002",
+      "description": "Fresh Market Product 2",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 6.68,
+      "currency": "USD"
+    },
+    {
+      "line_number": 3,
+      "buyer_sku": "SKU2003",
+      "vendor_sku": "VEND2003",
+      "description": "Fresh Market Product 3",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 6.97,
+      "currency": "USD"
+    },
+    {
+      "line_number": 4,
+      "buyer_sku": "SKU2004",
+      "vendor_sku": "VEND2004",
+      "description": "Fresh Market Product 4",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 7.26,
+      "currency": "USD"
+    },
+    {
+      "line_number": 5,
+      "buyer_sku": "SKU2005",
+      "vendor_sku": "VEND2005",
+      "description": "Fresh Market Product 5",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 7.55,
+      "currency": "USD"
+    },
+    {
+      "line_number": 6,
+      "buyer_sku": "SKU2006",
+      "vendor_sku": "VEND2006",
+      "description": "Fresh Market Product 6",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 7.84,
+      "currency": "USD"
+    },
+    {
+      "line_number": 7,
+      "buyer_sku": "SKU2007",
+      "vendor_sku": "VEND2007",
+      "description": "Fresh Market Product 7",
+      "quantity": 83,
+      "unit_of_measure": "EA",
+      "unit_price": 8.13,
+      "currency": "USD"
+    },
+    {
+      "line_number": 8,
+      "buyer_sku": "SKU2008",
+      "vendor_sku": "VEND2008",
+      "description": "Fresh Market Product 8",
+      "quantity": 92,
+      "unit_of_measure": "EA",
+      "unit_price": 8.42,
+      "currency": "USD"
+    },
+    {
+      "line_number": 9,
+      "buyer_sku": "SKU2009",
+      "vendor_sku": "VEND2009",
+      "description": "Fresh Market Product 9",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 8.71,
+      "currency": "USD"
+    },
+    {
+      "line_number": 10,
+      "buyer_sku": "SKU2010",
+      "vendor_sku": "VEND2010",
+      "description": "Fresh Market Product 10",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 9,
+      "currency": "USD"
+    },
+    {
+      "line_number": 11,
+      "buyer_sku": "SKU2011",
+      "vendor_sku": "VEND2011",
+      "description": "Fresh Market Product 11",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 9.29,
+      "currency": "USD"
+    },
+    {
+      "line_number": 12,
+      "buyer_sku": "SKU2012",
+      "vendor_sku": "VEND2012",
+      "description": "Fresh Market Product 12",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 9.58,
+      "currency": "USD"
+    },
+    {
+      "line_number": 13,
+      "buyer_sku": "SKU2013",
+      "vendor_sku": "VEND2013",
+      "description": "Fresh Market Product 13",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 9.87,
+      "currency": "USD"
+    },
+    {
+      "line_number": 14,
+      "buyer_sku": "SKU2014",
+      "vendor_sku": "VEND2014",
+      "description": "Fresh Market Product 14",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 10.16,
+      "currency": "USD"
+    },
+    {
+      "line_number": 15,
+      "buyer_sku": "SKU2015",
+      "vendor_sku": "VEND2015",
+      "description": "Fresh Market Product 15",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 10.45,
+      "currency": "USD"
+    },
+    {
+      "line_number": 16,
+      "buyer_sku": "SKU2016",
+      "vendor_sku": "VEND2016",
+      "description": "Fresh Market Product 16",
+      "quantity": 83,
+      "unit_of_measure": "EA",
+      "unit_price": 10.74,
+      "currency": "USD"
+    },
+    {
+      "line_number": 17,
+      "buyer_sku": "SKU2017",
+      "vendor_sku": "VEND2017",
+      "description": "Fresh Market Product 17",
+      "quantity": 92,
+      "unit_of_measure": "EA",
+      "unit_price": 11.03,
+      "currency": "USD"
+    },
+    {
+      "line_number": 18,
+      "buyer_sku": "SKU2018",
+      "vendor_sku": "VEND2018",
+      "description": "Fresh Market Product 18",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 11.32,
+      "currency": "USD"
+    },
+    {
+      "line_number": 19,
+      "buyer_sku": "SKU2019",
+      "vendor_sku": "VEND2019",
+      "description": "Fresh Market Product 19",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 11.61,
+      "currency": "USD"
+    },
+    {
+      "line_number": 20,
+      "buyer_sku": "SKU2020",
+      "vendor_sku": "VEND2020",
+      "description": "Fresh Market Product 20",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 11.9,
+      "currency": "USD"
+    },
+    {
+      "line_number": 21,
+      "buyer_sku": "SKU2021",
+      "vendor_sku": "VEND2021",
+      "description": "Fresh Market Product 21",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 12.19,
+      "currency": "USD"
+    },
+    {
+      "line_number": 22,
+      "buyer_sku": "SKU2022",
+      "vendor_sku": "VEND2022",
+      "description": "Fresh Market Product 22",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 12.48,
+      "currency": "USD"
+    },
+    {
+      "line_number": 23,
+      "buyer_sku": "SKU2023",
+      "vendor_sku": "VEND2023",
+      "description": "Fresh Market Product 23",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 12.77,
+      "currency": "USD"
+    },
+    {
+      "line_number": 24,
+      "buyer_sku": "SKU2024",
+      "vendor_sku": "VEND2024",
+      "description": "Fresh Market Product 24",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 13.06,
+      "currency": "USD"
+    },
+    {
+      "line_number": 25,
+      "buyer_sku": "SKU2025",
+      "vendor_sku": "VEND2025",
+      "description": "Fresh Market Product 25",
+      "quantity": 83,
+      "unit_of_measure": "EA",
+      "unit_price": 13.35,
+      "currency": "USD"
+    },
+    {
+      "line_number": 26,
+      "buyer_sku": "SKU2026",
+      "vendor_sku": "VEND2026",
+      "description": "Fresh Market Product 26",
+      "quantity": 92,
+      "unit_of_measure": "EA",
+      "unit_price": 13.64,
+      "currency": "USD"
+    },
+    {
+      "line_number": 27,
+      "buyer_sku": "SKU2027",
+      "vendor_sku": "VEND2027",
+      "description": "Fresh Market Product 27",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 13.93,
+      "currency": "USD"
+    },
+    {
+      "line_number": 28,
+      "buyer_sku": "SKU2028",
+      "vendor_sku": "VEND2028",
+      "description": "Fresh Market Product 28",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 14.22,
+      "currency": "USD"
+    },
+    {
+      "line_number": 29,
+      "buyer_sku": "SKU2029",
+      "vendor_sku": "VEND2029",
+      "description": "Fresh Market Product 29",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 14.51,
+      "currency": "USD"
+    },
+    {
+      "line_number": 30,
+      "buyer_sku": "SKU2030",
+      "vendor_sku": "VEND2030",
+      "description": "Fresh Market Product 30",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 14.8,
+      "currency": "USD"
+    },
+    {
+      "line_number": 31,
+      "buyer_sku": "SKU2031",
+      "vendor_sku": "VEND2031",
+      "description": "Fresh Market Product 31",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 15.09,
+      "currency": "USD"
+    },
+    {
+      "line_number": 32,
+      "buyer_sku": "SKU2032",
+      "vendor_sku": "VEND2032",
+      "description": "Fresh Market Product 32",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 15.38,
+      "currency": "USD"
+    },
+    {
+      "line_number": 33,
+      "buyer_sku": "SKU2033",
+      "vendor_sku": "VEND2033",
+      "description": "Fresh Market Product 33",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 15.67,
+      "currency": "USD"
+    },
+    {
+      "line_number": 34,
+      "buyer_sku": "SKU2034",
+      "vendor_sku": "VEND2034",
+      "description": "Fresh Market Product 34",
+      "quantity": 83,
+      "unit_of_measure": "EA",
+      "unit_price": 15.96,
+      "currency": "USD"
+    },
+    {
+      "line_number": 35,
+      "buyer_sku": "SKU2035",
+      "vendor_sku": "VEND2035",
+      "description": "Fresh Market Product 35",
+      "quantity": 92,
+      "unit_of_measure": "EA",
+      "unit_price": 16.25,
+      "currency": "USD"
+    },
+    {
+      "line_number": 36,
+      "buyer_sku": "SKU2036",
+      "vendor_sku": "VEND2036",
+      "description": "Fresh Market Product 36",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 16.54,
+      "currency": "USD"
+    },
+    {
+      "line_number": 37,
+      "buyer_sku": "SKU2037",
+      "vendor_sku": "VEND2037",
+      "description": "Fresh Market Product 37",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 16.83,
+      "currency": "USD"
+    },
+    {
+      "line_number": 38,
+      "buyer_sku": "SKU2038",
+      "vendor_sku": "VEND2038",
+      "description": "Fresh Market Product 38",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 17.12,
+      "currency": "USD"
+    },
+    {
+      "line_number": 39,
+      "buyer_sku": "SKU2039",
+      "vendor_sku": "VEND2039",
+      "description": "Fresh Market Product 39",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 17.41,
+      "currency": "USD"
+    },
+    {
+      "line_number": 40,
+      "buyer_sku": "SKU2040",
+      "vendor_sku": "VEND2040",
+      "description": "Fresh Market Product 40",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 17.7,
+      "currency": "USD"
+    },
+    {
+      "line_number": 41,
+      "buyer_sku": "SKU2041",
+      "vendor_sku": "VEND2041",
+      "description": "Fresh Market Product 41",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 17.99,
+      "currency": "USD"
+    },
+    {
+      "line_number": 42,
+      "buyer_sku": "SKU2042",
+      "vendor_sku": "VEND2042",
+      "description": "Fresh Market Product 42",
+      "quantity": 74,
+      "unit_of_measure": "EA",
+      "unit_price": 18.28,
+      "currency": "USD"
+    },
+    {
+      "line_number": 43,
+      "buyer_sku": "SKU2043",
+      "vendor_sku": "VEND2043",
+      "description": "Fresh Market Product 43",
+      "quantity": 83,
+      "unit_of_measure": "EA",
+      "unit_price": 18.57,
+      "currency": "USD"
+    },
+    {
+      "line_number": 44,
+      "buyer_sku": "SKU2044",
+      "vendor_sku": "VEND2044",
+      "description": "Fresh Market Product 44",
+      "quantity": 92,
+      "unit_of_measure": "EA",
+      "unit_price": 18.86,
+      "currency": "USD"
+    },
+    {
+      "line_number": 45,
+      "buyer_sku": "SKU2045",
+      "vendor_sku": "VEND2045",
+      "description": "Fresh Market Product 45",
+      "quantity": 20,
+      "unit_of_measure": "EA",
+      "unit_price": 19.15,
+      "currency": "USD"
+    },
+    {
+      "line_number": 46,
+      "buyer_sku": "SKU2046",
+      "vendor_sku": "VEND2046",
+      "description": "Fresh Market Product 46",
+      "quantity": 29,
+      "unit_of_measure": "EA",
+      "unit_price": 19.44,
+      "currency": "USD"
+    },
+    {
+      "line_number": 47,
+      "buyer_sku": "SKU2047",
+      "vendor_sku": "VEND2047",
+      "description": "Fresh Market Product 47",
+      "quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 19.73,
+      "currency": "USD"
+    },
+    {
+      "line_number": 48,
+      "buyer_sku": "SKU2048",
+      "vendor_sku": "VEND2048",
+      "description": "Fresh Market Product 48",
+      "quantity": 47,
+      "unit_of_measure": "EA",
+      "unit_price": 20.02,
+      "currency": "USD"
+    },
+    {
+      "line_number": 49,
+      "buyer_sku": "SKU2049",
+      "vendor_sku": "VEND2049",
+      "description": "Fresh Market Product 49",
+      "quantity": 56,
+      "unit_of_measure": "EA",
+      "unit_price": 20.31,
+      "currency": "USD"
+    },
+    {
+      "line_number": 50,
+      "buyer_sku": "SKU2050",
+      "vendor_sku": "VEND2050",
+      "description": "Fresh Market Product 50",
+      "quantity": 65,
+      "unit_of_measure": "EA",
+      "unit_price": 20.6,
+      "currency": "USD"
+    }
+  ],
+  "total_line_items": 50
+}

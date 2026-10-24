@@ -171,7 +171,11 @@ class ReceivingAdviceLine(BaseModel):
     rejected_qty: Decimal   # >= 0
     damaged_qty: Decimal    # >= 0; may overlap with rejected_qty (partner-profile-dependent)
     uom: str
-    receipt_event_type: ReceiptEventType  # INCREMENTAL or CUMULATIVE
+    receipt_event_type: ReceiptEventType | None = None  # None = semantics not declared
+    condition_review_required: bool = False  # Receiving flagged the line for review
+    rejection_reason: str | None = None
+    receiving_condition: str | None = None   # e.g. "ACCEPTED", "DAMAGED"
+    raw: dict[str, str] = {}
 
     @field_validator("received_qty", "accepted_qty", "rejected_qty", "damaged_qty")
     @classmethod
@@ -187,6 +191,9 @@ class ReceivingAdvice(BaseModel):
     receipt_id: str
     receipt_date: date
     po_references: list[str]
+    buyer_id: str | None = None
+    supplier_id: str | None = None
+    receipt_event_id: str | None = None  # Event identity for replay detection
     facility: str | None = None   # Receiving facility identifier
     lines: list[ReceivingAdviceLine]
     content_hash: str

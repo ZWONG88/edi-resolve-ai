@@ -281,7 +281,7 @@ def test_settings_defaults(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     s = Settings(_env_file=str(tmp_path / ".env.nonexistent"))
     assert s.ai_provider == "mock"
-    assert s.three_way_enabled is False
+    assert s.three_way_enabled is True
     assert s.max_retry_attempts == 3
 
 
@@ -292,10 +292,11 @@ def test_settings_loads_env_file(tmp_path):
     assert s.ai_provider == "openai"
 
 
-def test_three_way_enabled_default_false(tmp_path, monkeypatch):
+def test_three_way_enabled_default_true(tmp_path, monkeypatch):
+    # Team rules doc makes 3-way (850+810+861) the core flow; 2-way is opt-out.
     monkeypatch.chdir(tmp_path)
     s = Settings(_env_file=str(tmp_path / ".env.nonexistent"))
-    assert s.three_way_enabled is False
+    assert s.three_way_enabled is True
 
 
 # ---------------------------------------------------------------------------
