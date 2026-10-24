@@ -4,6 +4,9 @@ File format (PR #1 backend plan): `uom_conversions.json` and `price_contracts.js
 arrays of UOMConversion / PriceContract objects; `product_master.json` is an object
 keyed by product_id. Numbers are JSON strings.
 
+`master_catalog.json` is a generated, synthetic product catalogue. It is enrichment
+only (PRD 17.3): it never feeds the comparator and is not part of reference_version().
+
 Missing, expired or conflicting records are surfaced (None, or ReconciliationError);
 nothing is ever guessed or fetched from outside sources.
 """
@@ -20,12 +23,15 @@ from typing import Any
 from pydantic import ValidationError
 
 from backend.exceptions import ReconciliationError
-from backend.models import PriceContract, ProductMaster, UOMConversion
+from backend.models import CatalogProduct, PriceContract, ProductMaster, UOMConversion
 
 REFERENCE_DIR = Path(__file__).resolve().parent.parent / "data" / "reference"
 UOM_FILE = "uom_conversions.json"
 CONTRACT_FILE = "price_contracts.json"
 PRODUCT_FILE = "product_master.json"
+CATALOG_FILE = "master_catalog.json"
+
+CatalogKey = tuple[str, str, str]  # (buyer_id, supplier_id, buyer_sku)
 
 
 def _reject_number(value: str) -> Any:
@@ -63,6 +69,34 @@ def load_product_master(path: str | Path | None = None) -> dict[str, ProductMast
     path = Path(path) if path else REFERENCE_DIR / PRODUCT_FILE
     records = _read_json(path, {})
     return {pid: _validate(ProductMaster, r, f"{path.name}[{pid}]") for pid, r in records.items()}
+
+
+def load_master_catalog(path: str | Path | None = None) -> dict[CatalogKey, CatalogProduct | None]:
+    """Catalogue products keyed by (buyer_id, supplier_id, buyer_sku). Enrichment only.
+
+    The file transports integers as JSON numbers and decimals as strings, so it is read
+    without the strict string-only rule. A key claimed by two products maps to None:
+    conflicting SKU pairs are never merged or guessed between.
+    """
+    path = Path(path) if path else REFERENCE_DIR / CATALOG_FILE
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_bytes(), parse_float=Decimal)
+    catalog: dict[CatalogKey, CatalogProduct | None] = {}
+    for i, record in enumerate(data.get("products", [])):
+        product = _validate(CatalogProduct, record, f"{path.name}.products[{i}]")
+        for sku in product.buyer_skus:
+            key = (product.buyer_id, product.supplier_id, sku)
+            catalog[key] = None if key in catalog else product
+    return catalog
+
+
+def lookup_catalog_product(
+    catalog: dict[CatalogKey, CatalogProduct | None], buyer_id: str, supplier_id: str,
+    buyer_sku: str,
+) -> CatalogProduct | None:
+    """The single catalogue product for this partner pair and SKU; None if absent or ambiguous."""
+    return catalog.get((buyer_id, supplier_id, buyer_sku))
 
 
 def _valid_on(effective: date, expiry: date | None, on_date: date | None) -> bool:

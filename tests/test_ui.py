@@ -60,6 +60,9 @@ def test_dataset_import_flow(monkeypatch) -> None:
     assert not review.exception
     assert any("NEEDS_HUMAN_AP_REVIEW" in e.value for e in review.error)
     assert any("Discrepancies (7 of 50 lines)" in s.value for s in review.subheader)
+    line_table = next(d.value for d in review.dataframe if "Catalog name" in d.value.columns)
+    assert "Fresh Market Product 1" in set(line_table["Catalog name"])
+    assert any("Synthetic catalogue" in c.value for c in review.caption)
     review.text_area[0].set_value("Short pay per suggested corrections")
     next(b for b in review.button if "Submit" in str(b.label)).click().run()
     assert any(s.value == "EDI 820 remittance" for s in review.subheader)

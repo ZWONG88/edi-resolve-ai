@@ -143,9 +143,13 @@ if lines:
     def _cell(rec: dict, side: str, key: str) -> str:
         return rec.get(f"{side}_value_normalized", {}).get(key, "")
 
+    catalog = orchestrator.catalog_enrichment(
+        conn, case_id, [ln["invoice_value_raw"].get("product_id", "") for ln in lines])
     rows = [{
         "Line": ln["invoice_line_id"],
         "SKU": ln["invoice_value_raw"].get("product_id", ""),
+        "Catalog name": catalog.get(ln["invoice_value_raw"].get("product_id", ""), {}).get(
+            "product_name") or "",
         "Status": ln["status"],
         "PO qty": _cell(ln, "po", "quantity"),
         "Billed qty": _cell(ln, "invoice", "quantity"),
@@ -182,6 +186,21 @@ if lines:
                         for f in ("quantity", "unit_price", "extension")]
         st.dataframe(pd.DataFrame(detail_rows).fillna(""), hide_index=True,
                      use_container_width=True)
+        entry = catalog.get(rec["invoice_value_raw"].get("product_id", ""))
+        if entry:
+            st.markdown("**Catalogue (reference only)**")
+            st.caption("Synthetic catalogue — not used for matching, pricing or pack size "
+                       "decisions. ⚠ marks a value picked from conflicting or inferred data.")
+            cat_rows = [{"Field": "Name", "Value": entry["product_name"] or ""},
+                        {"Field": "Master UOM", "Value": entry["master_uom"] or ""},
+                        {"Field": "Pack size",
+                         "Value": "" if entry["pack_size"] is None else
+                         f"{entry['pack_size']}{' ⚠' if entry['pack_size_synthetic'] else ''}"},
+                        {"Field": "Vendor SKU", "Value": ", ".join(entry["vendor_skus"])}]
+            cat_rows += [{"Field": f"Price {p['currency']}/{p['uom']}",
+                          "Value": f"{p['unit_price']}{' ⚠' if p['synthetic'] else ''}"}
+                         for p in entry["prices"]]
+            st.dataframe(pd.DataFrame(cat_rows), hide_index=True, use_container_width=True)
 
 # EDI 820 remittance (generated, never transmitted)
 if detail["remittance"]:

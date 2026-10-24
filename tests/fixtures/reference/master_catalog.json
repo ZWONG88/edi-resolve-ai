@@ -1,0 +1,316 @@
+{
+  "metadata": {
+    "name": "Syndicated Synthetic Master Catalogue",
+    "version": "1.0",
+    "synthetic": true
+  },
+  "products": [
+    {
+      "catalog_product_id": "PRODUCT-9018263dd6b387d1",
+      "concatenated_key": "BUYER001|SUP002|SKU|SKU2001|VEND2001",
+      "buyer_id": "BUYER001",
+      "supplier_id": "SUP002",
+      "upc": null,
+      "buyer_skus": [
+        "SKU2001"
+      ],
+      "vendor_skus": [
+        "VEND2001"
+      ],
+      "product_name": "Fresh Market Product 1",
+      "master_uom": "EA",
+      "pack_size": null,
+      "pack_size_origin": "not_provided_or_inferable",
+      "price_records": [
+        {
+          "currency": "USD",
+          "unit_of_measure": "EA",
+          "price_basis_quantity": 1,
+          "unit_price": "6.39",
+          "selection": {
+            "value": "6.39",
+            "candidates": [
+              "6.39"
+            ],
+            "conflict": false,
+            "method": "unanimous"
+          }
+        }
+      ],
+      "field_selections": {
+        "description": {
+          "value": "Fresh Market Product 1",
+          "candidates": [
+            "Fresh Market Product 1"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "uom": {
+          "value": "EA",
+          "candidates": [
+            "EA"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "pack_size": {
+          "value": null,
+          "candidates": [],
+          "conflict": false,
+          "method": "missing"
+        }
+      },
+      "pack_size_evidence": {
+        "explicit_candidates": [],
+        "synthetic_inferences": []
+      },
+      "source_transaction_types": [
+        "810",
+        "850",
+        "861"
+      ],
+      "source_observation_count": 3,
+      "review_flags": [],
+      "unusable_price_observations": []
+    },
+    {
+      "catalog_product_id": "PRODUCT-19172fbfdd60e28b",
+      "concatenated_key": "BUYER001|SUP002|SKU|SKU2030|VEND2030",
+      "buyer_id": "BUYER001",
+      "supplier_id": "SUP002",
+      "upc": null,
+      "buyer_skus": [
+        "SKU2030"
+      ],
+      "vendor_skus": [
+        "VEND2030"
+      ],
+      "product_name": "Fresh Market Product 30",
+      "master_uom": "EA",
+      "pack_size": null,
+      "pack_size_origin": "not_provided_or_inferable",
+      "price_records": [
+        {
+          "currency": "USD",
+          "unit_of_measure": "EA",
+          "price_basis_quantity": 1,
+          "unit_price": "14.8",
+          "selection": {
+            "value": "14.8",
+            "candidates": [
+              "14.8"
+            ],
+            "conflict": false,
+            "method": "unanimous"
+          }
+        }
+      ],
+      "field_selections": {
+        "description": {
+          "value": "Fresh Market Product 30",
+          "candidates": [
+            "Fresh Market Product 30"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "uom": {
+          "value": "EA",
+          "candidates": [
+            "EA"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "pack_size": {
+          "value": null,
+          "candidates": [],
+          "conflict": false,
+          "method": "missing"
+        }
+      },
+      "pack_size_evidence": {
+        "explicit_candidates": [],
+        "synthetic_inferences": []
+      },
+      "source_transaction_types": [
+        "810",
+        "850"
+      ],
+      "source_observation_count": 2,
+      "review_flags": [],
+      "unusable_price_observations": []
+    },
+    {
+      "catalog_product_id": "PRODUCT-d86c1a1dfd428648",
+      "concatenated_key": "BUYER001|SUP002|SKU|SKU2030|VEND2030X",
+      "buyer_id": "BUYER001",
+      "supplier_id": "SUP002",
+      "upc": null,
+      "buyer_skus": [
+        "SKU2030"
+      ],
+      "vendor_skus": [
+        "VEND2030X"
+      ],
+      "product_name": "Fresh Market Product 30",
+      "master_uom": "EA",
+      "pack_size": null,
+      "pack_size_origin": "not_provided_or_inferable",
+      "price_records": [
+        {
+          "currency": "USD",
+          "unit_of_measure": "EA",
+          "price_basis_quantity": 1,
+          "unit_price": "14.8",
+          "selection": {
+            "value": "14.8",
+            "candidates": [
+              "14.8"
+            ],
+            "conflict": false,
+            "method": "unanimous"
+          }
+        }
+      ],
+      "field_selections": {
+        "description": {
+          "value": "Fresh Market Product 30",
+          "candidates": [
+            "Fresh Market Product 30"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "uom": {
+          "value": "EA",
+          "candidates": [
+            "EA"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "pack_size": {
+          "value": null,
+          "candidates": [],
+          "conflict": false,
+          "method": "missing"
+        }
+      },
+      "pack_size_evidence": {
+        "explicit_candidates": [],
+        "synthetic_inferences": []
+      },
+      "source_transaction_types": [
+        "861"
+      ],
+      "source_observation_count": 1,
+      "review_flags": [],
+      "unusable_price_observations": []
+    },
+    {
+      "catalog_product_id": "PRODUCT-10e4dabc36e88c1a",
+      "concatenated_key": "DEMO-BUYER-01|DEMO-SUPPLIER-01|SKU|SKU0001|VEND0001",
+      "buyer_id": "DEMO-BUYER-01",
+      "supplier_id": "DEMO-SUPPLIER-01",
+      "upc": null,
+      "buyer_skus": [
+        "SKU0001"
+      ],
+      "vendor_skus": [
+        "VEND0001"
+      ],
+      "product_name": "Canned Chickpeas",
+      "master_uom": "CS",
+      "pack_size": 6,
+      "pack_size_origin": "synthetic_selected_explicit_or_inferred",
+      "price_records": [
+        {
+          "currency": "EUR",
+          "unit_of_measure": "CS",
+          "price_basis_quantity": 1,
+          "unit_price": "7.5",
+          "selection": {
+            "value": "7.5",
+            "candidates": [
+              "7.5"
+            ],
+            "conflict": false,
+            "method": "unanimous"
+          }
+        },
+        {
+          "currency": "USD",
+          "unit_of_measure": "CS",
+          "price_basis_quantity": 1,
+          "unit_price": "7.44",
+          "selection": {
+            "value": "7.44",
+            "candidates": [
+              "6.9",
+              "7.5",
+              "8.7"
+            ],
+            "conflict": true,
+            "method": "random_within_range",
+            "minimum": "6.9",
+            "maximum": "8.7"
+          }
+        }
+      ],
+      "field_selections": {
+        "description": {
+          "value": "Canned Chickpeas",
+          "candidates": [
+            "Canned Chickpeas"
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        },
+        "uom": {
+          "value": "CS",
+          "candidates": [
+            "CS",
+            "EA"
+          ],
+          "conflict": true,
+          "method": "random_observed"
+        },
+        "pack_size": {
+          "value": 6,
+          "candidates": [
+            6
+          ],
+          "conflict": false,
+          "method": "unanimous"
+        }
+      },
+      "pack_size_evidence": {
+        "explicit_candidates": [],
+        "synthetic_inferences": [
+          {
+            "value": 6,
+            "po_number": "PO-DEMO-0006",
+            "line_number": "1",
+            "method": "synthetic_inference_quantity_and_price_ratios_agree"
+          },
+          {
+            "value": 6,
+            "po_number": "PO-DEMO-0041",
+            "line_number": "1",
+            "method": "synthetic_inference_quantity_and_price_ratios_agree"
+          }
+        ]
+      },
+      "source_transaction_types": [
+        "810",
+        "850",
+        "861"
+      ],
+      "source_observation_count": 35,
+      "review_flags": [],
+      "unusable_price_observations": []
+    }
+  ]
+}
