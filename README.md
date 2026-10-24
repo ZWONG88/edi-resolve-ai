@@ -1,6 +1,6 @@
 # EDI Resolve
 
-IBM Group 15: Darren San | Manasi Shitole| Nidhi Khandewal | Shruthi Raghavan | Zach Wong
+IBM Group 15: Darren San | Manasi Shitole | Nidhi Khandewal | Shruthi Raghavan | Zach Wong
 
 AI-assisted three-way reconciliation of EDI purchase orders (850), receiving advice (861) and
 invoices (810).
