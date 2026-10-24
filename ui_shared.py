@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+from decimal import Decimal
 from pathlib import Path
 
 import streamlit as st
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from backend import ai_resolver, orchestrator  # noqa: E402  (env must load first)
+from backend.config import get_settings  # noqa: E402
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
 
@@ -41,7 +43,13 @@ SCENARIOS: dict[str, tuple[str | None, str, str | None]] = {
 }
 
 STATE_COLORS = {
+    "MATCHED_3WAY": "green",
     "MATCHED_2WAY": "green",
+    "WAIT_RECEIPT": "gray",
+    "RECEIPT_VARIANCE": "orange",
+    "RECEIPT_REVIEW": "red",
+    "OVER_RECEIPT": "red",
+    "UNMAPPED_LINE_ITEM": "red",
     "PARTIAL_BILLING": "blue",
     "PRICE_VARIANCE": "orange",
     "QUANTITY_VARIANCE": "orange",
@@ -53,6 +61,28 @@ STATE_COLORS = {
     "DUPLICATE_CONFLICT": "red",
     "TECHNICAL_HOLD": "red",
 }
+
+
+DISPOSITION_COLORS = {
+    "AUTO_APPROVED": "green",
+    "APPROVED_WITH_SHORT_PAY": "orange",
+    "NEEDS_HUMAN_AP_REVIEW": "red",
+    "RECEIPT_NOT_VERIFIED": "blue",
+    "HOLD": "red",
+    "PO_HEADER_MISMATCH": "red",
+    "DUPLICATE_INVOICE_REJECTED": "red",
+    "SCHEMA_VALIDATION_ERROR": "red",
+}
+
+
+def disposition_badge(disposition: str | None) -> str:
+    if not disposition:
+        return "—"
+    return f":{DISPOSITION_COLORS.get(disposition, 'gray')}[**{disposition}**]"
+
+
+def money(value: str | None) -> str:
+    return "—" if value in (None, "") else f"${Decimal(value):,.2f}"
 
 
 @st.cache_resource
@@ -70,6 +100,8 @@ def mode_banner() -> None:
         "mock_unavailable": "Mock — always unavailable",
         "watsonx": "IBM watsonx.ai Granite",
     }.get(ai_resolver.provider_name(), f"Unsupported ({ai_resolver.provider_name()})")
-    st.sidebar.markdown(f"**Mode:** Two-way (P0)  \n**AI:** {ai_mode}")
-    st.sidebar.caption("Receipt (861) matching is disabled. No action here pays an invoice "
-                       "or changes an external system.")
+    three_way = get_settings().three_way_enabled
+    mode = "Three-way (850 + 810 + 861)" if three_way else "Two-way (850 + 810)"
+    st.sidebar.markdown(f"**Mode:** {mode}  \n**AI:** {ai_mode}")
+    st.sidebar.caption("Clean three-way matches are auto-approved. EDI 820 files are generated "
+                       "for review and never transmitted; nothing here moves money.")

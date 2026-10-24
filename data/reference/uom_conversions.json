@@ -8,5 +8,55 @@
     "expiry_date": null,
     "source": "product_master_v1",
     "approver": "product-data owner"
+  },
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "6",
+    "product_id": "SKU0001",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "derived_from_dataset2 — verify against the product master",
+    "approver": null
+  },
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "12",
+    "product_id": "SKU0002",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "derived_from_dataset2 — verify against the product master",
+    "approver": null
+  },
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "24",
+    "product_id": "SKU0003",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "derived_from_dataset2 — verify against the product master",
+    "approver": null
+  },
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "8",
+    "product_id": "SKU0004",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "derived_from_dataset2 — verify against the product master",
+    "approver": null
+  },
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "10",
+    "product_id": "SKU0005",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "derived_from_dataset2 — verify against the product master",
+    "approver": null
   }
 ]

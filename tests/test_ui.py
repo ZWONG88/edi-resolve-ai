@@ -18,6 +18,7 @@ def _fresh_db(tmp_path, monkeypatch):
 
 def test_upload_review_audit_flow() -> None:
     up = AppTest.from_file("../pages/upload.py", default_timeout=30).run()
+    up.radio[0].set_value("Sample scenario").run()
     up.selectbox[0].set_value("AT04 · Price variance $2.00 vs $2.10").run()
     up.button[0].click().run()
     assert not up.exception
@@ -36,6 +37,25 @@ def test_upload_review_audit_flow() -> None:
 
 def test_quarantine_shows_field_error() -> None:
     up = AppTest.from_file("../pages/upload.py", default_timeout=30).run()
+    up.radio[0].set_value("Sample scenario").run()
     up.selectbox[0].set_value("AT11 · Malformed invoice (missing quantity)").run()
     up.button[0].click().run()
     assert any("lines[0].quantity" in e.value for e in up.error)
+
+
+def test_dataset_import_flow(monkeypatch) -> None:
+    monkeypatch.setenv("THREE_WAY_ENABLED", "true")
+    up = AppTest.from_file("../pages/upload.py", default_timeout=60).run()
+    assert up.radio[0].value == "Import dataset folder"
+    up.selectbox[0].set_value("DATASET 3").run()
+    next(b for b in up.button if b.label == "Import & reconcile").click().run()
+    assert not up.exception
+    assert dict((m.label, m.value) for m in up.metric)["Blocked cash at risk"] == "$382.00"
+
+    review = AppTest.from_file("../pages/review.py", default_timeout=60).run()
+    assert not review.exception
+    assert any("NEEDS_HUMAN_AP_REVIEW" in e.value for e in review.error)
+    assert any("Discrepancies (7 of 50 lines)" in s.value for s in review.subheader)
+    review.text_area[0].input("Short pay per suggested corrections").run()
+    next(b for b in review.button if "Submit" in str(b.label)).click().run()
+    assert any(s.value == "EDI 820 remittance" for s in review.subheader)

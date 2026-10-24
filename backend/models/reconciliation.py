@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum
 
 from pydantic import BaseModel, field_validator
 
@@ -24,12 +25,18 @@ STATE_PRECEDENCE: list[FindingStatus] = [
     FindingStatus.DUPLICATE_CONFLICT,
     FindingStatus.TECHNICAL_HOLD,
     FindingStatus.WAIT_DOCUMENT,
+    FindingStatus.WAIT_RECEIPT,
     FindingStatus.REVIEW_LINK,
     FindingStatus.INSUFFICIENT_EVIDENCE,
     FindingStatus.NOT_EVALUATED,
+    FindingStatus.RECEIPT_REVIEW,
+    FindingStatus.OVER_RECEIPT,
+    FindingStatus.UNMAPPED_LINE_ITEM,
     FindingStatus.QUANTITY_VARIANCE,
+    FindingStatus.RECEIPT_VARIANCE,
     FindingStatus.PRICE_VARIANCE,
     FindingStatus.PARTIAL_BILLING,
+    FindingStatus.MATCHED_3WAY,
     FindingStatus.MATCHED_2WAY,
 ]
 
@@ -42,7 +49,23 @@ BLOCKING_STATES: set[FindingStatus] = {
     FindingStatus.REVIEW_LINK,
     FindingStatus.INSUFFICIENT_EVIDENCE,
     FindingStatus.NOT_EVALUATED,
+    FindingStatus.WAIT_RECEIPT,
+    FindingStatus.RECEIPT_REVIEW,
+    FindingStatus.OVER_RECEIPT,
 }
+
+
+class Disposition(StrEnum):
+    """Invoice-level outcome from the team's 3-way rules (Stage 5), plus PRD holds."""
+
+    AUTO_APPROVED = "AUTO_APPROVED"                  # 3-way clean; blocked cash == 0
+    APPROVED_WITH_SHORT_PAY = "APPROVED_WITH_SHORT_PAY"  # 0 < blocked <= high-value threshold
+    NEEDS_HUMAN_AP_REVIEW = "NEEDS_HUMAN_AP_REVIEW"  # blocked > high-value threshold
+    HOLD = "HOLD"                                    # blocking evidence problem (PRD)
+    PO_HEADER_MISMATCH = "PO_HEADER_MISMATCH"        # no matching PO for this partner
+    DUPLICATE_INVOICE_REJECTED = "DUPLICATE_INVOICE_REJECTED"
+    SCHEMA_VALIDATION_ERROR = "SCHEMA_VALIDATION_ERROR"
+    RECEIPT_NOT_VERIFIED = "RECEIPT_NOT_VERIFIED"    # 2-way mode: no auto-approval or 820
 
 
 class ReconciliationPolicy(BaseModel):
@@ -65,10 +88,16 @@ class ReconciliationPolicy(BaseModel):
     qty_tolerance: Decimal
     three_way_enabled: bool = False
     policy_version: str
+    de_minimis_line_tolerance: Money = Money(amount=Decimal("1.00"))   # rules doc 4.1
+    high_value_hold_threshold: Money = Money(amount=Decimal("500.00"))  # rules doc 4.2
 
     @classmethod
     def baseline(cls) -> "ReconciliationPolicy":
-        """Prototype baseline (PRD 18.1): USD, 2 dp, ROUND_HALF_UP, zero tolerances."""
+        """Prototype baseline (PRD 18.1): USD, 2 dp, ROUND_HALF_UP, zero tolerances.
+
+        Check tolerances stay zero (every variance is recorded). The dollar thresholds
+        only affect the invoice disposition (rules doc 4.1 / 4.2).
+        """
         return cls(
             currency="USD",
             decimal_places=2,
@@ -92,6 +121,7 @@ class Finding(BaseModel):
 
     finding_id: str
     check: str                          # e.g. "unit_price", "quantity", "uom_conversion"
+    rule_id: str | None = None          # Team rules doc ID, e.g. "R_PRICE_VARIANCE"
     status: CheckStatus
     result_state: FindingStatus | None  # State this finding drives; None = informational
     message: str
@@ -142,6 +172,17 @@ class LineResult(BaseModel):
     tolerance_applied: str = ""
     findings: list[Finding] = []
 
+    # Dollar impact (rules doc Stage 3-4); None when the line could not be evaluated
+    accepted_qty: Decimal | None = None        # Accepted receipt available, base UOM (3-way)
+    payable_qty: Decimal | None = None
+    invoiced_amount: Money | None = None
+    approved_amount: Money | None = None
+    blocked_amount: Money | None = None
+    waived_amount: Money | None = None         # De minimis variance waived (still recorded)
+    adjustments: dict[str, str] = {}           # {"ADJ_PRICE": "6.00", ...}
+    correction: str | None = None              # Suggested correction for the supplier
+    de_minimis: bool = False
+
 
 class CaseResult(BaseModel):
     """
@@ -178,6 +219,13 @@ class CaseResult(BaseModel):
     header_findings: list[Finding] = []     # Currency, totals, receipt checks
     evidence: list[Evidence] = []           # Every evidence ID a finding may cite
     allocations: list[dict[str, str]] = []  # Allocations this run would record
+    receipt_allocations: list[dict[str, str]] = []  # Accepted receipt qty claimed (3-way)
+    mode: str = "2way"                      # "2way" or "3way"
+    disposition: Disposition | None = None
+    invoiced_total: Money | None = None
+    approved_total: Money | None = None
+    blocked_total: Money | None = None
+    waived_total: Money | None = None
 
     def all_findings(self) -> list[Finding]:
         out = list(self.header_findings)

@@ -1,0 +1,524 @@
+{
+  "transaction_type": "810",
+  "x12_version": "004010",
+  "invoice_number": "INV-10001",
+  "invoice_date": "2026-10-23",
+  "purchase_order_number": "PO-10001",
+  "purchase_order_date": "2026-10-23",
+  "supplier": {
+    "id": "SUP001",
+    "name": "DEMO SUPPLIER"
+  },
+  "buyer": {
+    "id": "BUYER001",
+    "name": "DEMO RETAILER"
+  },
+  "currency": "USD",
+  "line_items": [
+    {
+      "line_number": 1,
+      "buyer_sku": "SKU0001",
+      "vendor_sku": "VEND0001",
+      "description": "Demo Retail Product 1",
+      "invoiced_quantity": 17,
+      "unit_of_measure": "EA",
+      "unit_price": 4.62,
+      "line_total": 78.54
+    },
+    {
+      "line_number": 2,
+      "buyer_sku": "SKU0002",
+      "vendor_sku": "VEND0002",
+      "description": "Demo Retail Product 2",
+      "invoiced_quantity": 24,
+      "unit_of_measure": "EA",
+      "unit_price": 4.99,
+      "line_total": 119.76
+    },
+    {
+      "line_number": 3,
+      "buyer_sku": "SKU0003",
+      "vendor_sku": "VEND0003",
+      "description": "Demo Retail Product 3",
+      "invoiced_quantity": 31,
+      "unit_of_measure": "EA",
+      "unit_price": 5.36,
+      "line_total": 166.16
+    },
+    {
+      "line_number": 4,
+      "buyer_sku": "SKU0004",
+      "vendor_sku": "VEND0004",
+      "description": "Demo Retail Product 4",
+      "invoiced_quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 5.73,
+      "line_total": 217.74
+    },
+    {
+      "line_number": 5,
+      "buyer_sku": "SKU0005",
+      "vendor_sku": "VEND0005",
+      "description": "Demo Retail Product 5",
+      "invoiced_quantity": 45,
+      "unit_of_measure": "EA",
+      "unit_price": 6.1,
+      "line_total": 274.5
+    },
+    {
+      "line_number": 6,
+      "buyer_sku": "SKU0006",
+      "vendor_sku": "VEND0006",
+      "description": "Demo Retail Product 6",
+      "invoiced_quantity": 52,
+      "unit_of_measure": "EA",
+      "unit_price": 6.47,
+      "line_total": 336.44
+    },
+    {
+      "line_number": 7,
+      "buyer_sku": "SKU0007",
+      "vendor_sku": "VEND0007",
+      "description": "Demo Retail Product 7",
+      "invoiced_quantity": 59,
+      "unit_of_measure": "EA",
+      "unit_price": 6.84,
+      "line_total": 403.56
+    },
+    {
+      "line_number": 8,
+      "buyer_sku": "SKU0008",
+      "vendor_sku": "VEND0008",
+      "description": "Demo Retail Product 8",
+      "invoiced_quantity": 66,
+      "unit_of_measure": "EA",
+      "unit_price": 7.21,
+      "line_total": 475.86
+    },
+    {
+      "line_number": 9,
+      "buyer_sku": "SKU0009",
+      "vendor_sku": "VEND0009",
+      "description": "Demo Retail Product 9",
+      "invoiced_quantity": 73,
+      "unit_of_measure": "EA",
+      "unit_price": 7.58,
+      "line_total": 553.34
+    },
+    {
+      "line_number": 10,
+      "buyer_sku": "SKU0010",
+      "vendor_sku": "VEND0010",
+      "description": "Demo Retail Product 10",
+      "invoiced_quantity": 80,
+      "unit_of_measure": "EA",
+      "unit_price": 7.95,
+      "line_total": 636
+    },
+    {
+      "line_number": 11,
+      "buyer_sku": "SKU0011",
+      "vendor_sku": "VEND0011",
+      "description": "Demo Retail Product 11",
+      "invoiced_quantity": 87,
+      "unit_of_measure": "EA",
+      "unit_price": 8.32,
+      "line_total": 723.84
+    },
+    {
+      "line_number": 12,
+      "buyer_sku": "SKU0012",
+      "vendor_sku": "VEND0012",
+      "description": "Demo Retail Product 12",
+      "invoiced_quantity": 94,
+      "unit_of_measure": "EA",
+      "unit_price": 8.69,
+      "line_total": 816.86
+    },
+    {
+      "line_number": 13,
+      "buyer_sku": "SKU0013",
+      "vendor_sku": "VEND0013",
+      "description": "Demo Retail Product 13",
+      "invoiced_quantity": 10,
+      "unit_of_measure": "EA",
+      "unit_price": 9.06,
+      "line_total": 90.6
+    },
+    {
+      "line_number": 14,
+      "buyer_sku": "SKU0014",
+      "vendor_sku": "VEND0014",
+      "description": "Demo Retail Product 14",
+      "invoiced_quantity": 17,
+      "unit_of_measure": "EA",
+      "unit_price": 9.43,
+      "line_total": 160.31
+    },
+    {
+      "line_number": 15,
+      "buyer_sku": "SKU0015",
+      "vendor_sku": "VEND0015",
+      "description": "Demo Retail Product 15",
+      "invoiced_quantity": 24,
+      "unit_of_measure": "EA",
+      "unit_price": 9.8,
+      "line_total": 235.2
+    },
+    {
+      "line_number": 16,
+      "buyer_sku": "SKU0016",
+      "vendor_sku": "VEND0016",
+      "description": "Demo Retail Product 16",
+      "invoiced_quantity": 31,
+      "unit_of_measure": "EA",
+      "unit_price": 10.17,
+      "line_total": 315.27
+    },
+    {
+      "line_number": 17,
+      "buyer_sku": "SKU0017",
+      "vendor_sku": "VEND0017",
+      "description": "Demo Retail Product 17",
+      "invoiced_quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 10.54,
+      "line_total": 400.52
+    },
+    {
+      "line_number": 18,
+      "buyer_sku": "SKU0018",
+      "vendor_sku": "VEND0018",
+      "description": "Demo Retail Product 18",
+      "invoiced_quantity": 45,
+      "unit_of_measure": "EA",
+      "unit_price": 10.91,
+      "line_total": 490.95
+    },
+    {
+      "line_number": 19,
+      "buyer_sku": "SKU0019",
+      "vendor_sku": "VEND0019",
+      "description": "Demo Retail Product 19",
+      "invoiced_quantity": 52,
+      "unit_of_measure": "EA",
+      "unit_price": 11.28,
+      "line_total": 586.56
+    },
+    {
+      "line_number": 20,
+      "buyer_sku": "SKU0020",
+      "vendor_sku": "VEND0020",
+      "description": "Demo Retail Product 20",
+      "invoiced_quantity": 59,
+      "unit_of_measure": "EA",
+      "unit_price": 11.65,
+      "line_total": 687.35
+    },
+    {
+      "line_number": 21,
+      "buyer_sku": "SKU0021",
+      "vendor_sku": "VEND0021",
+      "description": "Demo Retail Product 21",
+      "invoiced_quantity": 66,
+      "unit_of_measure": "EA",
+      "unit_price": 12.02,
+      "line_total": 793.32
+    },
+    {
+      "line_number": 22,
+      "buyer_sku": "SKU0022",
+      "vendor_sku": "VEND0022",
+      "description": "Demo Retail Product 22",
+      "invoiced_quantity": 73,
+      "unit_of_measure": "EA",
+      "unit_price": 12.39,
+      "line_total": 904.47
+    },
+    {
+      "line_number": 23,
+      "buyer_sku": "SKU0023",
+      "vendor_sku": "VEND0023",
+      "description": "Demo Retail Product 23",
+      "invoiced_quantity": 80,
+      "unit_of_measure": "EA",
+      "unit_price": 12.76,
+      "line_total": 1020.8
+    },
+    {
+      "line_number": 24,
+      "buyer_sku": "SKU0024",
+      "vendor_sku": "VEND0024",
+      "description": "Demo Retail Product 24",
+      "invoiced_quantity": 87,
+      "unit_of_measure": "EA",
+      "unit_price": 13.13,
+      "line_total": 1142.31
+    },
+    {
+      "line_number": 25,
+      "buyer_sku": "SKU0025",
+      "vendor_sku": "VEND0025",
+      "description": "Demo Retail Product 25",
+      "invoiced_quantity": 94,
+      "unit_of_measure": "EA",
+      "unit_price": 13.5,
+      "line_total": 1269
+    },
+    {
+      "line_number": 26,
+      "buyer_sku": "SKU0026",
+      "vendor_sku": "VEND0026",
+      "description": "Demo Retail Product 26",
+      "invoiced_quantity": 10,
+      "unit_of_measure": "EA",
+      "unit_price": 13.87,
+      "line_total": 138.7
+    },
+    {
+      "line_number": 27,
+      "buyer_sku": "SKU0027",
+      "vendor_sku": "VEND0027",
+      "description": "Demo Retail Product 27",
+      "invoiced_quantity": 17,
+      "unit_of_measure": "EA",
+      "unit_price": 14.24,
+      "line_total": 242.08
+    },
+    {
+      "line_number": 28,
+      "buyer_sku": "SKU0028",
+      "vendor_sku": "VEND0028",
+      "description": "Demo Retail Product 28",
+      "invoiced_quantity": 24,
+      "unit_of_measure": "EA",
+      "unit_price": 14.61,
+      "line_total": 350.64
+    },
+    {
+      "line_number": 29,
+      "buyer_sku": "SKU0029",
+      "vendor_sku": "VEND0029",
+      "description": "Demo Retail Product 29",
+      "invoiced_quantity": 31,
+      "unit_of_measure": "EA",
+      "unit_price": 14.98,
+      "line_total": 464.38
+    },
+    {
+      "line_number": 30,
+      "buyer_sku": "SKU0030",
+      "vendor_sku": "VEND0030",
+      "description": "Demo Retail Product 30",
+      "invoiced_quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 15.35,
+      "line_total": 583.3
+    },
+    {
+      "line_number": 31,
+      "buyer_sku": "SKU0031",
+      "vendor_sku": "VEND0031",
+      "description": "Demo Retail Product 31",
+      "invoiced_quantity": 45,
+      "unit_of_measure": "EA",
+      "unit_price": 15.72,
+      "line_total": 707.4
+    },
+    {
+      "line_number": 32,
+      "buyer_sku": "SKU0032",
+      "vendor_sku": "VEND0032",
+      "description": "Demo Retail Product 32",
+      "invoiced_quantity": 52,
+      "unit_of_measure": "EA",
+      "unit_price": 16.09,
+      "line_total": 836.68
+    },
+    {
+      "line_number": 33,
+      "buyer_sku": "SKU0033",
+      "vendor_sku": "VEND0033",
+      "description": "Demo Retail Product 33",
+      "invoiced_quantity": 59,
+      "unit_of_measure": "EA",
+      "unit_price": 16.46,
+      "line_total": 971.14
+    },
+    {
+      "line_number": 34,
+      "buyer_sku": "SKU0034",
+      "vendor_sku": "VEND0034",
+      "description": "Demo Retail Product 34",
+      "invoiced_quantity": 66,
+      "unit_of_measure": "EA",
+      "unit_price": 16.83,
+      "line_total": 1110.78
+    },
+    {
+      "line_number": 35,
+      "buyer_sku": "SKU0035",
+      "vendor_sku": "VEND0035",
+      "description": "Demo Retail Product 35",
+      "invoiced_quantity": 73,
+      "unit_of_measure": "EA",
+      "unit_price": 17.2,
+      "line_total": 1255.6
+    },
+    {
+      "line_number": 36,
+      "buyer_sku": "SKU0036",
+      "vendor_sku": "VEND0036",
+      "description": "Demo Retail Product 36",
+      "invoiced_quantity": 80,
+      "unit_of_measure": "EA",
+      "unit_price": 17.57,
+      "line_total": 1405.6
+    },
+    {
+      "line_number": 37,
+      "buyer_sku": "SKU0037",
+      "vendor_sku": "VEND0037",
+      "description": "Demo Retail Product 37",
+      "invoiced_quantity": 87,
+      "unit_of_measure": "EA",
+      "unit_price": 17.94,
+      "line_total": 1560.78
+    },
+    {
+      "line_number": 38,
+      "buyer_sku": "SKU0038",
+      "vendor_sku": "VEND0038",
+      "description": "Demo Retail Product 38",
+      "invoiced_quantity": 94,
+      "unit_of_measure": "EA",
+      "unit_price": 18.31,
+      "line_total": 1721.14
+    },
+    {
+      "line_number": 39,
+      "buyer_sku": "SKU0039",
+      "vendor_sku": "VEND0039",
+      "description": "Demo Retail Product 39",
+      "invoiced_quantity": 10,
+      "unit_of_measure": "EA",
+      "unit_price": 18.68,
+      "line_total": 186.8
+    },
+    {
+      "line_number": 40,
+      "buyer_sku": "SKU0040",
+      "vendor_sku": "VEND0040",
+      "description": "Demo Retail Product 40",
+      "invoiced_quantity": 17,
+      "unit_of_measure": "EA",
+      "unit_price": 19.05,
+      "line_total": 323.85
+    },
+    {
+      "line_number": 41,
+      "buyer_sku": "SKU0041",
+      "vendor_sku": "VEND0041",
+      "description": "Demo Retail Product 41",
+      "invoiced_quantity": 24,
+      "unit_of_measure": "EA",
+      "unit_price": 19.42,
+      "line_total": 466.08
+    },
+    {
+      "line_number": 42,
+      "buyer_sku": "SKU0042",
+      "vendor_sku": "VEND0042",
+      "description": "Demo Retail Product 42",
+      "invoiced_quantity": 31,
+      "unit_of_measure": "EA",
+      "unit_price": 19.79,
+      "line_total": 613.49
+    },
+    {
+      "line_number": 43,
+      "buyer_sku": "SKU0043",
+      "vendor_sku": "VEND0043",
+      "description": "Demo Retail Product 43",
+      "invoiced_quantity": 38,
+      "unit_of_measure": "EA",
+      "unit_price": 20.16,
+      "line_total": 766.08
+    },
+    {
+      "line_number": 44,
+      "buyer_sku": "SKU0044",
+      "vendor_sku": "VEND0044",
+      "description": "Demo Retail Product 44",
+      "invoiced_quantity": 45,
+      "unit_of_measure": "EA",
+      "unit_price": 20.53,
+      "line_total": 923.85
+    },
+    {
+      "line_number": 45,
+      "buyer_sku": "SKU0045",
+      "vendor_sku": "VEND0045",
+      "description": "Demo Retail Product 45",
+      "invoiced_quantity": 52,
+      "unit_of_measure": "EA",
+      "unit_price": 20.9,
+      "line_total": 1086.8
+    },
+    {
+      "line_number": 46,
+      "buyer_sku": "SKU0046",
+      "vendor_sku": "VEND0046",
+      "description": "Demo Retail Product 46",
+      "invoiced_quantity": 59,
+      "unit_of_measure": "EA",
+      "unit_price": 21.27,
+      "line_total": 1254.93
+    },
+    {
+      "line_number": 47,
+      "buyer_sku": "SKU0047",
+      "vendor_sku": "VEND0047",
+      "description": "Demo Retail Product 47",
+      "invoiced_quantity": 66,
+      "unit_of_measure": "EA",
+      "unit_price": 21.64,
+      "line_total": 1428.24
+    },
+    {
+      "line_number": 48,
+      "buyer_sku": "SKU0048",
+      "vendor_sku": "VEND0048",
+      "description": "Demo Retail Product 48",
+      "invoiced_quantity": 73,
+      "unit_of_measure": "EA",
+      "unit_price": 22.01,
+      "line_total": 1606.73
+    },
+    {
+      "line_number": 49,
+      "buyer_sku": "SKU0049",
+      "vendor_sku": "VEND0049",
+      "description": "Demo Retail Product 49",
+      "invoiced_quantity": 80,
+      "unit_of_measure": "EA",
+      "unit_price": 22.38,
+      "line_total": 1790.4
+    },
+    {
+      "line_number": 50,
+      "buyer_sku": "SKU0050",
+      "vendor_sku": "VEND0050",
+      "description": "Demo Retail Product 50",
+      "invoiced_quantity": 87,
+      "unit_of_measure": "EA",
+      "unit_price": 22.75,
+      "line_total": 1979.25
+    }
+  ],
+  "subtotal": 36673.98,
+  "tax": 0,
+  "shipping": 0,
+  "invoice_total": 36673.98,
+  "total_line_items": 50
+}

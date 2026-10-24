@@ -83,6 +83,32 @@ CREATE TABLE IF NOT EXISTS allocations (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS receipt_allocations (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    evidence_version INTEGER NOT NULL,
+    po_id TEXT NOT NULL,
+    po_line TEXT NOT NULL,
+    invoice_id TEXT NOT NULL,
+    quantity TEXT NOT NULL,
+    uom TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS remittances (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL,
+    evidence_version INTEGER NOT NULL,
+    invoice_number TEXT NOT NULL,
+    disposition TEXT NOT NULL,
+    paid_amount TEXT NOT NULL,
+    status TEXT NOT NULL,          -- GENERATED_NOT_TRANSMITTED | SUPERSEDED
+    file_path TEXT,
+    payload_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS ai_explanations (
     id TEXT PRIMARY KEY,
     case_id TEXT NOT NULL,
@@ -149,10 +175,26 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     return conn
 
 
+# Columns added after the first release; init_db adds them to older databases.
+_ADDED_COLUMNS = {
+    "reconciliation_cases": {
+        "disposition_status": "TEXT",
+        "invoiced_amount": "TEXT",
+        "approved_amount": "TEXT",
+        "blocked_amount": "TEXT",
+    },
+}
+
+
 def init_db(path: str | Path | None = None) -> sqlite3.Connection:
     """Create all tables if missing. Idempotent; safe on every app start."""
     conn = connect(path)
     conn.executescript(SCHEMA)
+    for table, columns in _ADDED_COLUMNS.items():
+        existing = {row["name"] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for name, sql_type in columns.items():
+            if name not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
     return conn
 
 
