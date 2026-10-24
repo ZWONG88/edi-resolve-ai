@@ -12,5 +12,5 @@ AI response so its uncertainty, evidence, and review label remain consistent.
 
 The IBM Plex font stylesheets are loaded from Google Fonts, which means browsers need network
 access to display IBM Plex. The local fallback fonts keep the interface readable offline.
-EDIResolve AI retains its own product identity; the visual treatment is inspired by Carbon and
+EDI Resolve retains its own product identity; the visual treatment is inspired by Carbon and
 does not indicate IBM endorsement.

@@ -16,7 +16,7 @@ from backend.config import get_settings  # noqa: E402
 from backend.models import AIExplanation  # noqa: E402
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
-BRAND_MARK = Path(__file__).resolve().parent / "assets" / "reconcileai.svg"
+BRAND_MARK = Path(__file__).resolve().parent / "assets" / "edi-resolve.svg"
 NAV_ITEMS = (
     ("Reconciliations", "pages/workspace.py", ":material/dashboard:"),
     ("Upload & Process", "pages/upload.py", ":material/upload_file:"),

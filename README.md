@@ -1,4 +1,4 @@
-# EDIResolve AI
+# EDI Resolve
 
 AI-assisted three-way reconciliation of EDI purchase orders (850), receiving advice (861) and
 invoices (810).
@@ -6,7 +6,7 @@ invoices (810).
 
 Retailers and suppliers lose time and money when invoices don't match purchase orders: wrong
 prices, case-vs-each unit mix-ups, over-billing across several invoices, malformed files.
-EDIResolve AI reconciles each invoice against its PO **and the goods actually accepted at the
+EDI Resolve reconciles each invoice against its PO **and the goods actually accepted at the
 dock** with a **deterministic rules engine** that follows the team's
 [3-way reconciliation rules](docs/rules-comparison.md):
 

@@ -19,7 +19,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """
-    Runtime configuration for EDIResolve AI backend.
+    Runtime configuration for EDI Resolve backend.
 
     Field names map to environment variables (case-insensitive):
       database_path     ← DATABASE_PATH

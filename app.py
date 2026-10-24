@@ -1,4 +1,4 @@
-"""EDIResolve AI Streamlit entry point and named application navigation."""
+"""EDI Resolve Streamlit entry point and named application navigation."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import streamlit as st
 
 from ui_shared import BRAND_MARK
 
-st.set_page_config(page_title="EDIResolve AI", layout="wide")
+st.set_page_config(page_title="EDI Resolve", layout="wide")
 st.logo(str(BRAND_MARK), size="large")
 
 pages = [
