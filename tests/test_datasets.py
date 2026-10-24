@@ -88,3 +88,52 @@ def test_reimport_is_idempotent(conn) -> None:
     again = load(conn, "dataset1")
     assert [r["outcome"] for r in again["cases"]] == ["REPLAY_NOOP"]
     assert len(orchestrator.list_cases(conn)) == 1
+
+
+def flagged_lines(conn, case_id: str) -> tuple[dict, dict, dict]:
+    result = json.loads(db.get_case(conn, case_id)["result_json"])
+    flagged = {ln["invoice_line_id"]: ln["status"] for ln in result["line_results"]
+               if ln["status"] != "MATCHED_3WAY"}
+    blocked = {ln["invoice_line_id"]: ln["adjustments"] for ln in result["line_results"]
+               if ln["adjustments"]}
+    header = {f["check"]: f for f in result["header_findings"]}
+    return flagged, blocked, header
+
+
+def test_dataset4_flags_every_seeded_discrepancy(conn) -> None:
+    """Dataset 4: shortages, rejected goods, extension error, header overbill, over-receipt."""
+    summary = load(conn, "dataset4")
+    row = summary["cases"][0]
+    assert (row["state"], row["disposition"]) == ("RECEIPT_REVIEW", "NEEDS_HUMAN_AP_REVIEW")
+    assert (Decimal(row["invoiced"]), Decimal(row["approved"]), Decimal(row["blocked"])) == (
+        Decimal("35898.64"), Decimal("35582.48"), Decimal("316.16"))
+    flagged, blocked, header = flagged_lines(conn, row["case_id"])
+    assert flagged == {
+        "5": "RECEIPT_VARIANCE", "15": "PARTIAL_BILLING", "17": "RECEIPT_REVIEW",
+        "37": "PRICE_VARIANCE", "45": "OVER_RECEIPT",
+    }
+    assert blocked == {"5": {"ADJ_SHORTAGE": "114.00"}, "17": {"ADJ_SHORTAGE": "48.56"},
+                       "37": {"ADJ_EXTENSION": "18.00"}}
+    assert header["invoice_total"]["delta"] == "+135.60"  # header total above sum of lines
+    assert orchestrator.current_remittance(conn, row["case_id"]) is None  # needs AP review
+
+
+def test_dataset5_holds_on_link_uom_and_shipping(conn) -> None:
+    """Dataset 5: swapped receipt SKU, missing CS conversion and shipping hold the invoice."""
+    summary = load(conn, "dataset5")
+    row = summary["cases"][0]
+    assert (row["state"], row["disposition"]) == ("REVIEW_LINK", "HOLD")
+    assert Decimal(summary["totals"]["held"]) == Decimal("29138.16")
+    flagged, blocked, header = flagged_lines(conn, row["case_id"])
+    assert flagged == {
+        "4": "PRICE_VARIANCE", "8": "RECEIPT_VARIANCE", "12": "RECEIPT_REVIEW",
+        "19": "RECEIPT_REVIEW", "22": "QUANTITY_VARIANCE", "25": "OVER_RECEIPT",
+        "31": "REVIEW_LINK", "36": "PRICE_VARIANCE", "40": "INSUFFICIENT_EVIDENCE",
+    }
+    assert blocked == {
+        "4": {"ADJ_PRICE": "69.00"}, "8": {"ADJ_SHORTAGE": "73.98"},
+        "12": {"ADJ_SHORTAGE": "46.30"}, "19": {"ADJ_SHORTAGE": "454.28"},
+        "22": {"ADJ_SHORTAGE": "71.16"}, "36": {"ADJ_EXTENSION": "25.00"},
+    }
+    assert header["invoice_total"]["status"] == "CHECK_NOT_EVALUATED"  # shipping 45.00
+    assert orchestrator.current_remittance(conn, row["case_id"]) is None

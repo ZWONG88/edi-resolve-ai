@@ -1,6 +1,7 @@
 # Test Results — P0 Release Gate
 
 Recorded 2026-10-23 on branch `feature/three-way-rules`, synthetic fixtures plus the team datasets (`tests/fixtures/`), Python 3.12.7, `AI_PROVIDER=mock`.
+Updated 2026-10-24: backend e2e audit added 20 tests (`tests/test_e2e_*.py`, datasets 4 and 5); see "E2E audit" below.
 Updated 2026-10-24: live IBM watsonx.ai integration verified (`AI_PROVIDER=watsonx`, model `ibm/granite-4-h-small`, project `8b6b4870-b6dc-4834-ab3f-476707d3b432`, US South).
 These are results on labeled synthetic data only. They say nothing about production
 accuracy or payment timing (PRD 22.2).
@@ -9,11 +10,13 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` | **143 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| Full `pytest` | **160 passed**, 0 failed, 3 xfailed (known bugs B1, B2, B5), 1 deselected (live watsonx integration test) |
+| E2E journeys / ingestion / edge cases (`tests/test_e2e_*.py`) | **15 passed**, 3 xfailed (strict) |
+| `pytest --cov=backend` | **94%** overall; lowest are ai_resolver 82% (live watsonx path), parser 88% |
 | AT01–AT24 two-way gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
 | AT25–AT35 three-way (`tests/test_three_way.py`) | **AT25–AT32, AT34, AT35 passed**. AT33 and AT36 are not implemented. |
 | Team rules doc (`tests/test_three_way.py`, `test_disposition.py`) | Rules 1.2, 2.2, 3.1, 3.2, 4.1 and 4.2, the 820 and supersession all pass |
-| Team datasets (`tests/test_datasets.py`) | Dataset 1, Dataset2 and DATASET 3 outcomes frozen and passing; re-import is idempotent |
+| Team datasets (`tests/test_datasets.py`) | Datasets 1–5 outcomes frozen and passing; re-import is idempotent |
 | PR #1 schema tests (`tests/test_models.py`) | **23 / 23 passed** |
 | Other: parser 13, reference 11, comparator 13, AI 16, adapters 7, db 2, UI 3 | all passed |
 | `ruff check .` | All checks passed |
@@ -26,6 +29,8 @@ accuracy or payment timing (PRD 22.2).
 | Dataset 1 (PO-10001, 50 lines) | 1 | `MATCHED_3WAY` → `AUTO_APPROVED`; $36,673.98 approved, $0 blocked; 820 paid in full |
 | DATASET 3 (PO-10002, 50 lines) | 1 | `NEEDS_HUMAN_AP_REVIEW`; 7 lines flagged; $382.00 blocked |
 | Dataset2 | 60 | 30 auto-approved, 10 short pay, 10 need AP review, 10 held |
+| DATASET 4 (PO-10003, 50 lines) | 1 | `RECEIPT_REVIEW` → `NEEDS_HUMAN_AP_REVIEW`; $35,582.48 approved, $316.16 blocked |
+| Dataset5 (PO-10004, 50 lines) | 1 | `REVIEW_LINK` → `HOLD`; $29,138.16 held |
 
 **Dataset2 by category**
 
@@ -141,3 +146,35 @@ Results are reported per category so that easy matches can't hide misses.
 | At least one insufficient-evidence case | ✅ AT03, AT12, AT24 |
 | Documented limitations | ✅ README "Known limitations" |
 | Reliable demo | ✅ offline mock by default; no keys needed; `mock_unavailable` demos AI failure |
+
+## DATASET 4 and Dataset5 flagged lines
+
+| Dataset | Line | What was found | Blocked |
+|---|---|---|---|
+| 4 | 5 | Billed 70, accepted 58 | `ADJ_SHORTAGE` $114.00 |
+| 4 | 15 | Billed 20 of 28 ordered | none (partial billing) |
+| 4 | 17 | Rejected 4, accepted 46 of 50 billed | `ADJ_SHORTAGE` $48.56, receiving review |
+| 4 | 37 | Line total $712.68 ≠ 42 × $16.54 | `ADJ_EXTENSION` $18.00 |
+| 4 | 45 | Accepted 61, ordered 54 | review only |
+| 4 | header | Invoice total $135.60 above the sum of lines | $135.60 |
+| 5 | 4 | Invoice $8.68 vs PO $7.18 | `ADJ_PRICE` $69.00 |
+| 5 | 8 | Billed 12, accepted 3 | `ADJ_SHORTAGE` $73.98 |
+| 5 | 12 | Rejected 5, accepted 43 of 48 | `ADJ_SHORTAGE` $46.30, receiving review |
+| 5 | 19 | Not received | `ADJ_SHORTAGE` $454.28, receiving review |
+| 5 | 22 | Billed 74, ordered/accepted 68 | `ADJ_SHORTAGE` $71.16 |
+| 5 | 25 | Accepted 33, ordered 25 | review only |
+| 5 | 31 | Receipt SKU4013 vs PO SKU4031 | `REVIEW_LINK`: receipt not linked |
+| 5 | 36 | Line total $862.00 ≠ 54 × $15.50 | `ADJ_EXTENSION` $25.00 |
+| 5 | 40 | Receipt in CS, no CS→EA conversion | `INSUFFICIENT_EVIDENCE` |
+| 5 | header | $45.00 shipping | totals `NOT_EVALUATED` → `HOLD` (rules doc) |
+
+## E2E audit: known issues (2026-10-24)
+
+| # | Issue | Test |
+|---|---|---|
+| B1 | Rejecting an `AUTO_APPROVED` case leaves its 820 `GENERATED_NOT_TRANSMITTED` | xfail `test_reject_auto_approved_supersedes_820` |
+| B2 | `rerun_case` on a quarantined case raises `ParseError`, not `ReviewValidationError` (UI catches it) | xfail `test_rerun_quarantined_raises_review_validation_error` |
+| B3 | Rerunning a `DUPLICATE_CONFLICT` case reconciles the conflicting invoice and lifts the hold (no over-allocation) | `test_rerun_duplicate_conflict_does_not_double_allocate`; intended behaviour is open |
+| B4 | `reset_demo_data` deletes `audit_events` (PRD 20.2 append-only) | demo-only; decision open |
+| B5 | `summarize()` money totals not formatted to cents (`"23614.2"`) | xfail `test_summarize_totals_two_decimals` |
+| B6 | Reused idempotency key with a different action is a silent no-op | decision open |
