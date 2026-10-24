@@ -19,14 +19,18 @@ st.markdown(
 
 cases = orchestrator.list_cases(conn)
 open_cases = [c for c in cases if c["review_status"] == "OPEN" and c["status"] != "MATCHED_2WAY"]
-c1, c2, c3 = st.columns(3)
-c1.metric("Cases", len(cases))
-c2.metric("Open exceptions", len(open_cases))
-c3.metric("Matched (2-way)", sum(c["status"] == "MATCHED_2WAY" for c in cases))
+with st.container(border=True):
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Cases", len(cases))
+    c2.metric("Open exceptions", len(open_cases))
+    c3.metric("Matched (2-way)", sum(c["status"] == "MATCHED_2WAY" for c in cases))
 
-st.page_link("pages/upload.py", label="1. Upload & Process", icon="📥")
-st.page_link("pages/review.py", label="2. Exception Review", icon="🔎")
-st.page_link("pages/audit.py", label="3. Audit History", icon="📜")
+with st.container(border=True):
+    st.subheader("Workspace")
+    nav = st.columns(3)
+    nav[0].page_link("pages/upload.py", label="Upload & Process", icon="📥")
+    nav[1].page_link("pages/review.py", label="Exception Review", icon="🔎")
+    nav[2].page_link("pages/audit.py", label="Audit History", icon="📜")
 
 st.caption(
     "Rules run on Decimal arithmetic with zero tolerance. AI never does arithmetic, never sees "

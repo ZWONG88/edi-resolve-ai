@@ -14,28 +14,30 @@ st.caption("Load an EDI 850 purchase order and an EDI 810 invoice. Deterministic
            "first; AI explanations are requested later, on demand.")
 
 conn = get_conn()
-source = st.radio("Source", ["Sample scenario", "Upload files"], horizontal=True)
-
 po_bytes = inv_bytes = receipt_bytes = None
-if source == "Sample scenario":
-    label = st.selectbox("Scenario", list(SCENARIOS))
-    po_file, inv_file, receipt_file = SCENARIOS[label]
-    st.caption(f"PO: `{po_file or '(none)'}` · Invoice: `{inv_file}`"
-               + (f" · Receipt: `{receipt_file}`" if receipt_file else ""))
-    po_bytes = (RAW_DIR / po_file).read_bytes() if po_file else None
-    inv_bytes = (RAW_DIR / inv_file).read_bytes()
-    receipt_bytes = (RAW_DIR / receipt_file).read_bytes() if receipt_file else None
-else:
-    c1, c2, c3 = st.columns(3)
-    po_up = c1.file_uploader("EDI 850 purchase order (JSON)", type="json")
-    inv_up = c2.file_uploader("EDI 810 invoice (JSON)", type="json")
-    rc_up = c3.file_uploader("EDI 861 receipt (optional)", type="json")
-    po_bytes = po_up.getvalue() if po_up else None
-    inv_bytes = inv_up.getvalue() if inv_up else None
-    receipt_bytes = rc_up.getvalue() if rc_up else None
-    if rc_up:
-        st.info("861 receipts are stored but unsupported for reconciliation while "
-                "THREE_WAY_ENABLED=false; the receipt check will show NOT_EVALUATED.")
+with st.container(border=True):
+    st.subheader("Transaction documents")
+    source = st.radio("Source", ["Sample scenario", "Upload files"], horizontal=True)
+
+    if source == "Sample scenario":
+        label = st.selectbox("Scenario", list(SCENARIOS))
+        po_file, inv_file, receipt_file = SCENARIOS[label]
+        st.caption(f"PO: `{po_file or '(none)'}` · Invoice: `{inv_file}`"
+                   + (f" · Receipt: `{receipt_file}`" if receipt_file else ""))
+        po_bytes = (RAW_DIR / po_file).read_bytes() if po_file else None
+        inv_bytes = (RAW_DIR / inv_file).read_bytes()
+        receipt_bytes = (RAW_DIR / receipt_file).read_bytes() if receipt_file else None
+    else:
+        c1, c2, c3 = st.columns(3)
+        po_up = c1.file_uploader("EDI 850 purchase order (JSON)", type="json")
+        inv_up = c2.file_uploader("EDI 810 invoice (JSON)", type="json")
+        rc_up = c3.file_uploader("EDI 861 receipt (optional)", type="json")
+        po_bytes = po_up.getvalue() if po_up else None
+        inv_bytes = inv_up.getvalue() if inv_up else None
+        receipt_bytes = rc_up.getvalue() if rc_up else None
+        if rc_up:
+            st.info("861 receipts are stored but unsupported for reconciliation while "
+                    "THREE_WAY_ENABLED=false; the receipt check will show NOT_EVALUATED.")
 
 if st.button("Process", type="primary", disabled=inv_bytes is None):
     try:

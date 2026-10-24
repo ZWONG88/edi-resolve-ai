@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from backend import ai_resolver, orchestrator  # noqa: E402  (env must load first)
+from backend.models import AIExplanation  # noqa: E402
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
 
@@ -47,11 +48,15 @@ STATE_COLORS = {
     "QUANTITY_VARIANCE": "orange",
     "INSUFFICIENT_EVIDENCE": "violet",
     "NOT_EVALUATED": "violet",
-    "WAIT_DOCUMENT": "gray",
-    "REVIEW_LINK": "gray",
+    "WAIT_DOCUMENT": "blue",
+    "REVIEW_LINK": "blue",
     "QUARANTINED": "red",
     "DUPLICATE_CONFLICT": "red",
     "TECHNICAL_HOLD": "red",
+    "OPEN": "blue",
+    "RESOLUTION_APPROVED": "green",
+    "RECOMMENDATION_REJECTED": "orange",
+    "ESCALATED": "violet",
 }
 
 
@@ -64,12 +69,39 @@ def badge(state: str) -> str:
     return f":{STATE_COLORS.get(state, 'gray')}[**{state}**]"
 
 
+def render_ai_explanation(expl: AIExplanation) -> None:
+    """Render the validated explanation contract, including safe failure states."""
+    with st.container(border=True):
+        st.markdown("##### 🤖 AI Suggestion — requires human review")
+        st.markdown(f"**Status:** `{expl.status}` · model `{expl.model_version}` · "
+                    f"prompt `{expl.prompt_version}`")
+        if expl.status == "AI_UNAVAILABLE":
+            st.warning("The AI provider is unavailable. Deterministic findings remain available; "
+                       "review the evidence below or retry the suggestion later.")
+        elif expl.status == "AI_ABSTAIN":
+            st.info("The AI could not make a supported suggestion. Use the deterministic "
+                    "findings and request any missing evidence before deciding.")
+        if expl.possible_cause:
+            st.markdown(f"**Possible cause (hypothesis):** {expl.possible_cause}")
+        if expl.suggested_next_action:
+            st.markdown(f"**Suggested next action:** `{expl.suggested_next_action}`")
+        if expl.uncertainty_note:
+            st.markdown(f"**Uncertainty:** {expl.uncertainty_note}")
+        if expl.missing_evidence:
+            st.markdown("**Missing evidence:** " + ", ".join(expl.missing_evidence))
+        st.markdown("**Cited evidence IDs:** "
+                    + (", ".join(f"`{item}`" for item in expl.cited_evidence_ids) or "—"))
+
+
 def mode_banner() -> None:
     ai_mode = {
         "mock": "Mock (offline stub)",
         "mock_unavailable": "Mock — always unavailable",
         "watsonx": "IBM watsonx.ai Granite",
     }.get(ai_resolver.provider_name(), f"Unsupported ({ai_resolver.provider_name()})")
-    st.sidebar.markdown(f"**Mode:** Two-way (P0)  \n**AI:** {ai_mode}")
+    st.sidebar.markdown("### EDIResolve AI")
+    st.sidebar.caption("Reconciliation workspace")
+    st.sidebar.divider()
+    st.sidebar.markdown(f"**Matching:** Two-way (P0)  \n**AI:** {ai_mode}")
     st.sidebar.caption("Receipt (861) matching is disabled. No action here pays an invoice "
                        "or changes an external system.")

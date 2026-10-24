@@ -39,3 +39,17 @@ def test_quarantine_shows_field_error() -> None:
     up.selectbox[0].set_value("AT11 · Malformed invoice (missing quantity)").run()
     up.button[0].click().run()
     assert any("lines[0].quantity" in e.value for e in up.error)
+
+
+def test_ai_provider_failure_keeps_deterministic_review_available(monkeypatch) -> None:
+    monkeypatch.setenv("AI_PROVIDER", "mock_unavailable")
+    up = AppTest.from_file("../pages/upload.py", default_timeout=30).run()
+    up.selectbox[0].set_value("AT04 · Price variance $2.00 vs $2.10").run()
+    up.button[0].click().run()
+
+    review = AppTest.from_file("../pages/review.py", default_timeout=30).run()
+    next(b for b in review.button if b.label == "Get AI suggestion").click().run()
+
+    assert not review.exception
+    assert any("AI provider is unavailable" in w.value for w in review.warning)
+    assert any("Discrepancy summary" in h.value for h in review.subheader)

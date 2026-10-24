@@ -1,0 +1,47 @@
+# EDIResolve AI theme: Carbon-inspired tokens, adapted for Streamlit.
+# Font files are served by Google Fonts; built-in font fallbacks remain available.
+[theme]
+base = "light"
+primaryColor = "#0F62FE"
+backgroundColor = "#F4F4F4"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#161616"
+linkColor = "#0F62FE"
+borderColor = "#E0E0E0"
+dataframeBorderColor = "#E0E0E0"
+dataframeHeaderBackgroundColor = "#E0E0E0"
+dataframeHeaderTextColor = "#161616"
+
+font = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
+headingFont = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
+codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap, monospace"
+baseFontSize = 16
+baseFontWeight = 400
+headingFontSizes = ["2.25rem", "1.75rem", "1.25rem", "1.125rem", "1rem", "0.875rem"]
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+codeFontSize = "0.875rem"
+codeTextColor = "#161616"
+codeBackgroundColor = "#E0E0E0"
+baseRadius = "none"
+buttonRadius = "none"
+showWidgetBorder = true
+showSidebarBorder = true
+
+# High-contrast status colors used by Streamlit's semantic color markup.
+blueColor = "#0043CE"
+greenColor = "#198038"
+orangeColor = "#BA4E00"
+redColor = "#DA1E28"
+violetColor = "#6929C4"
+grayColor = "#525252"
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F4F4"
+textColor = "#161616"
+primaryColor = "#0F62FE"
+font = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
+headingFont = "'IBM Plex Sans':https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap, sans-serif"
+codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap, monospace"
+codeTextColor = "#161616"
+codeBackgroundColor = "#E0E0E0"

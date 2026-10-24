@@ -17,7 +17,7 @@ from backend.exceptions import (
     StaleVersionError,
 )
 from backend.models import ReviewActionType, ReviewRequest
-from ui_shared import badge, get_conn, mode_banner
+from ui_shared import badge, get_conn, mode_banner, render_ai_explanation
 
 mode_banner()
 st.title("Exception Review")
@@ -57,14 +57,20 @@ if case["version"] != st.session_state[loaded_key]:
         st.rerun()
 
 st.divider()
-h1, h2, h3, h4 = st.columns(4)
-h1.markdown(f"**Result**  \n{badge(case['status'])}")
-h2.markdown(f"**Review status**  \n{case['review_status']}"
-            + (f"  \n_{case['disposition']}_" if case["disposition"] else ""))
-h3.markdown("**Mode**  \nTwo-way (P0) · receipt NOT_EVALUATED")
-h4.markdown(f"**Versions**  \nevidence v{case['evidence_version']} · case v{case['version']}"
-            f"  \npolicy {case['policy_version'] or 'n/a'}"
-            f" · ref {case['reference_version'] or 'n/a'}")
+with st.container(border=True):
+    st.markdown(f"**Case ID**  `{case_id}`")
+    h1, h2, h3, h4 = st.columns(4)
+    h1.markdown(f"**Result**  \n{badge(case['status'])}")
+    h2.markdown(f"**Review status**  \n{badge(case['review_status'])}"
+                + (f"  \n_{case['disposition']}_" if case["disposition"] else ""))
+    h3.markdown("**Mode**  \nTwo-way (P0) · receipt NOT_EVALUATED")
+    h4.markdown(f"**Versions**  \nevidence v{case['evidence_version']} · "
+                f"case v{case['version']}"
+                f"  \npolicy {case['policy_version'] or 'n/a'}"
+                f" · ref {case['reference_version'] or 'n/a'}")
+
+st.caption("Review status tracks the human decision; the result state above always reflects "
+           "the deterministic reconciliation checks.")
 
 # Non-comparison outcomes
 if "error" in result:
@@ -79,8 +85,29 @@ if "errors" in result:
 for note in result.get("notes", []):
     st.info(note)
 
+# Line deltas first, so reviewers can scan discrepancies before the raw values.
+line_results = result.get("line_results", [])
+if line_results:
+    with st.container(border=True):
+        st.subheader("Discrepancy summary")
+        st.caption("Deltas are shown as returned by the rules engine. A blank delta means that "
+                   "check was not evaluated or did not produce a difference.")
+        summary_rows = []
+        for rec in line_results:
+            delta = rec.get("delta", {})
+            summary_rows.append({
+                "Invoice line": rec.get("invoice_line_id", "—"),
+                "PO line": rec.get("po_line_id") or "—",
+                "Line result": rec.get("status", "—"),
+                "Unit price delta": delta.get("unit_price", "—"),
+                "Extension delta": delta.get("extension", "—"),
+                "Quantity delta": delta.get("quantity", "—"),
+                "Open PO balance": delta.get("po_balance", "—"),
+            })
+        st.dataframe(pd.DataFrame(summary_rows), hide_index=True, use_container_width=True)
+
 # Line-level values: original vs normalized side by side
-for rec in result.get("line_results", []):
+for rec in line_results:
     st.subheader(f"Invoice line {rec['invoice_line_id']} → PO line "
                  f"{rec['po_line_id'] or '—'}  {badge(rec['status'])}")
     fields = ["quantity", "uom", "unit_price", "price_basis_qty", "extended_price"]
@@ -125,29 +152,27 @@ if result.get("evidence"):
 # AI suggestion (on demand, cached per evidence version)
 st.subheader("AI suggestion")
 expl = detail["explanation"]
+ai_error = None
 if case["status"] == "MATCHED_2WAY":
     st.caption("All required checks passed; no AI explanation needed.")
 elif expl is None:
     if st.button("Get AI suggestion"):
         with st.spinner("Requesting explanation..."):
-            expl, _ = orchestrator.request_ai_explanation(conn, case_id)
-        if expl.status == "AI_UNAVAILABLE":
-            st.warning(f"AI_UNAVAILABLE — {expl.uncertainty_note}")
-        else:
-            st.rerun()
+            try:
+                expl, _ = orchestrator.request_ai_explanation(conn, case_id)
+            except AuditPersistenceError:
+                st.error(orchestrator.ACTION_NOT_SAVED)
+            except Exception as exc:  # noqa: BLE001 - provider failures must not break review
+                ai_error = type(exc).__name__
+            else:
+                if expl.status != "AI_UNAVAILABLE":
+                    st.rerun()
+if ai_error:
+    st.warning("AI suggestion could not be retrieved. Deterministic findings and evidence "
+               "are still available; retry later or continue with human review.")
+    st.caption(f"Technical detail: {ai_error}")
 if expl is not None:
-    with st.container(border=True):
-        st.markdown("##### 🤖 AI Suggestion — requires human review")
-        st.markdown(f"**Status:** `{expl.status}` · model `{expl.model_version}` · "
-                    f"prompt `{expl.prompt_version}`")
-        if expl.possible_cause:
-            st.markdown(f"**Possible cause (hypothesis):** {expl.possible_cause}")
-        if expl.uncertainty_note:
-            st.markdown(f"**Uncertainty:** {expl.uncertainty_note}")
-        if expl.missing_evidence:
-            st.markdown("**Missing evidence:** " + ", ".join(expl.missing_evidence))
-        st.markdown(f"**Cited evidence:** {', '.join(expl.cited_evidence_ids) or '—'}")
-        st.markdown(f"**Suggested next action:** `{expl.suggested_next_action}`")
+    render_ai_explanation(expl)
 
 # Review form
 st.subheader("Review decision")
@@ -157,8 +182,11 @@ with st.form(f"review::{case_id}"):
     owner = st.selectbox("Escalation owner (required for Escalate)",
                          ["", *orchestrator.ESCALATION_OWNERS])
     close = st.checkbox("Approve as a closing exception disposition (never becomes MATCHED)")
-    use_rec = st.checkbox("This decision applies the AI suggestion shown above",
-                          disabled=detail["recommendation_version"] is None)
+    use_rec = st.checkbox(
+        "Record that this decision applies the AI suggestion shown above",
+        disabled=detail["recommendation_version"] is None,
+        help="Links this review action to the validated suggestion version in the audit log.",
+    )
     submitted = st.form_submit_button("Submit decision", type="primary")
 
 if submitted:
@@ -185,6 +213,17 @@ if submitted:
         st.session_state[loaded_key] = expected + 1
         st.success(f"{action} recorded with audit event.")
         st.rerun()
+
+if detail["reviews"]:
+    st.subheader("Reviewer history")
+    review_rows = [{
+        "Recorded at": row["event_at"][:19],
+        "Action": row["action"],
+        "Reason": row["reason"],
+        "Escalation owner": row["escalation_owner"] or "—",
+        "Case version": row["case_version"],
+    } for row in detail["reviews"]]
+    st.dataframe(pd.DataFrame(review_rows), hide_index=True, use_container_width=True)
 
 # Correct and rerun
 if case["invoice_id"]:
