@@ -2,7 +2,7 @@
 pydantic>=2.5,<3
 pydantic-settings>=2.1,<3
 python-dotenv>=1.0,<2
-streamlit>=1.37
+streamlit>=1.48,<2  # st.button(width=), st.logo(size=), st.navigation(position="hidden")
 # AI provider: IBM watsonx.ai (Granite). Imported only when AI_PROVIDER=watsonx.
 ibm-watsonx-ai>=1.1
 
