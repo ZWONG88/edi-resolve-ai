@@ -2,6 +2,8 @@
 
 IBM Group 15: Darren San | Manasi Shitole | Nidhi Khandewal | Shruthi Raghavan | Zach Wong
 
+Project pitch deck: https://docs.google.com/presentation/d/1BX5cJYDdPUO4iiTCLSVPeQOL3cy6ndwqIqifPDDf-co/edit?usp=sharing
+
 AI-assisted three-way reconciliation of EDI purchase orders (850), receiving advice (861) and
 invoices (810).
 **SpartHill Hacks 2026 · IBM AI Challenge**
