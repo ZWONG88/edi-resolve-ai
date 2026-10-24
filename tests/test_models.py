@@ -18,14 +18,13 @@ from __future__ import annotations
 import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
+from backend.config import Settings
 from backend.models import (
     CaseResult,
-    Evidence,
     FindingStatus,
     Invoice,
     InvoiceLine,
@@ -33,13 +32,9 @@ from backend.models import (
     Money,
     POLine,
     PurchaseOrder,
-    ReconciliationPolicy,
     ReviewActionType,
     ReviewRequest,
-    ReviewRecord,
 )
-from backend.config import Settings
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -94,6 +89,8 @@ def _make_invoice(**overrides) -> Invoice:
         invoice_id="INV-001",
         invoice_date=date(2026, 10, 5),
         po_references=["PO-12345"],
+        buyer_id="BUYER-001",
+        supplier_id="SUP-001",
         currency="USD",
         lines=[_make_invoice_line()],
         content_hash="sha256:def456",

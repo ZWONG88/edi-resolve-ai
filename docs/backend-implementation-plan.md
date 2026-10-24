@@ -1,5 +1,12 @@
 # EDIResolve AI — Backend Implementation Plan
 
+> **Implementation status (feature/p0-mvp):** Phases 1–7 are implemented. A few module names
+> differ from this plan: `reference_store.py` → `backend/reference.py`, `audit_db.py` →
+> `backend/db.py`, `ai_explainer.py` → `backend/ai_resolver.py`. `backend/orchestrator.py` and
+> `backend/models/` match. Fixtures are separate PO/invoice files in `tests/fixtures/`, listed in
+> `fixtures_manifest.json`. See `docs/test_results.md` for results.
+
+
 **Owner:** Backend Engineer
 **Event:** SpartHill Hacks 2026 — IBM Responsible AI Track
 **Status:** Approved — Phase 1 Finalized

@@ -1,0 +1,35 @@
+[
+  {
+    "contract_id": "CTR-005",
+    "product_id": "PROD-EA-005",
+    "agreed_price": "2.10",
+    "price_basis": "1",
+    "currency": "USD",
+    "effective_from": "2026-01-01",
+    "effective_to": "2026-12-31",
+    "partner_scope": "SupplierInc",
+    "policy_version": "contracts-2026-v1"
+  },
+  {
+    "contract_id": "CTR-024A",
+    "product_id": "PROD-EA-024",
+    "agreed_price": "2.00",
+    "price_basis": "1",
+    "currency": "USD",
+    "effective_from": "2026-01-01",
+    "effective_to": "2026-12-31",
+    "partner_scope": "SupplierInc",
+    "policy_version": "contracts-2026-v1"
+  },
+  {
+    "contract_id": "CTR-024B",
+    "product_id": "PROD-EA-024",
+    "agreed_price": "2.20",
+    "price_basis": "1",
+    "currency": "USD",
+    "effective_from": "2026-02-01",
+    "effective_to": "2026-12-31",
+    "partner_scope": "SupplierInc",
+    "policy_version": "contracts-2026-v1"
+  }
+]

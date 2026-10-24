@@ -1,0 +1,22 @@
+{
+  "_expected_result": "MATCHED_2WAY",
+  "doc_type": "850",
+  "version": "1.0",
+  "po_number": "PO-AT02",
+  "po_date": "2026-03-01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-CS-001",
+      "upc": "0001001",
+      "description": "Widget case of 12",
+      "quantity": "50",
+      "uom": "CS",
+      "unit_price": "24.00",
+      "price_basis_qty": "1"
+    }
+  ]
+}

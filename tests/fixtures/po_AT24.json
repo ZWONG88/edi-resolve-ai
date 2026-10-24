@@ -1,0 +1,21 @@
+{
+  "_expected_result": "INSUFFICIENT_EVIDENCE",
+  "doc_type": "850",
+  "version": "1.0",
+  "po_number": "PO-AT24",
+  "po_date": "2026-03-01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-024",
+      "upc": "0001024",
+      "description": "Widget",
+      "quantity": "100",
+      "uom": "EA",
+      "unit_price": "2.00"
+    }
+  ]
+}

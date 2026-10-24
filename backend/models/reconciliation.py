@@ -15,7 +15,34 @@ from decimal import Decimal
 
 from pydantic import BaseModel, field_validator
 
-from backend.models.common import Evidence, FindingStatus, Money
+from backend.models.common import CheckStatus, Evidence, FindingStatus, Money
+
+# Case-state precedence, most severe first. A case takes the first state present
+# among its findings; with none it is MATCHED_2WAY. All findings are still kept.
+STATE_PRECEDENCE: list[FindingStatus] = [
+    FindingStatus.QUARANTINED,
+    FindingStatus.DUPLICATE_CONFLICT,
+    FindingStatus.TECHNICAL_HOLD,
+    FindingStatus.WAIT_DOCUMENT,
+    FindingStatus.REVIEW_LINK,
+    FindingStatus.INSUFFICIENT_EVIDENCE,
+    FindingStatus.NOT_EVALUATED,
+    FindingStatus.QUANTITY_VARIANCE,
+    FindingStatus.PRICE_VARIANCE,
+    FindingStatus.PARTIAL_BILLING,
+    FindingStatus.MATCHED_2WAY,
+]
+
+# States that block a verified pass or a closing approval.
+BLOCKING_STATES: set[FindingStatus] = {
+    FindingStatus.QUARANTINED,
+    FindingStatus.DUPLICATE_CONFLICT,
+    FindingStatus.TECHNICAL_HOLD,
+    FindingStatus.WAIT_DOCUMENT,
+    FindingStatus.REVIEW_LINK,
+    FindingStatus.INSUFFICIENT_EVIDENCE,
+    FindingStatus.NOT_EVALUATED,
+}
 
 
 class ReconciliationPolicy(BaseModel):
@@ -39,12 +66,42 @@ class ReconciliationPolicy(BaseModel):
     three_way_enabled: bool = False
     policy_version: str
 
+    @classmethod
+    def baseline(cls) -> "ReconciliationPolicy":
+        """Prototype baseline (PRD 18.1): USD, 2 dp, ROUND_HALF_UP, zero tolerances."""
+        return cls(
+            currency="USD",
+            decimal_places=2,
+            rounding_mode="ROUND_HALF_UP",
+            price_abs_tolerance=Money(amount=Decimal("0")),
+            price_rel_tolerance=Decimal("0"),
+            qty_tolerance=Decimal("0"),
+            policy_version="P0-baseline-v1",
+        )
+
     @field_validator("decimal_places")
     @classmethod
     def _decimal_places_non_negative(cls, v: int) -> int:
         if v < 0:
             raise ValueError("decimal_places must be >= 0")
         return v
+
+
+class Finding(BaseModel):
+    """Result of one deterministic check on one line (or on the invoice header)."""
+
+    finding_id: str
+    check: str                          # e.g. "unit_price", "quantity", "uom_conversion"
+    status: CheckStatus
+    result_state: FindingStatus | None  # State this finding drives; None = informational
+    message: str
+    po_value: str | None = None
+    invoice_value: str | None = None
+    normalized_po_value: str | None = None
+    normalized_invoice_value: str | None = None
+    delta: str | None = None
+    tolerance_applied: str | None = None
+    evidence_ids: list[str] = []
 
 
 class LineResult(BaseModel):
@@ -59,7 +116,7 @@ class LineResult(BaseModel):
     """
 
     line_id: str                              # Unique ID for this result row
-    po_line_id: str
+    po_line_id: str | None = None             # None when the line could not be linked
     invoice_line_id: str
     status: FindingStatus                     # Per-line outcome from the decision table
 
@@ -71,10 +128,19 @@ class LineResult(BaseModel):
     invoice_unit_price_base: Money | None = None
     contract_price_base: Money | None = None  # Contract price (evidence only; never overwrites PO)
 
-    allocated_qty: Decimal                    # Qty allocated from this invoice line against the PO
+    allocated_qty: Decimal = Decimal("0")     # Qty allocated from this invoice line against the PO
     evidence: list[Evidence] = []             # Field-level pointers supporting this result
     checks_not_evaluated: list[str] = []      # Names of skipped checks, e.g. ["price_check"]
     ai_explanation: str | None = None         # Populated by orchestrator after AI call
+
+    # Side-by-side display values (strings, exactly as computed) and per-check findings
+    po_value_raw: dict[str, str] = {}
+    invoice_value_raw: dict[str, str] = {}
+    po_value_normalized: dict[str, str] = {}
+    invoice_value_normalized: dict[str, str] = {}
+    delta: dict[str, str] = {}
+    tolerance_applied: str = ""
+    findings: list[Finding] = []
 
 
 class CaseResult(BaseModel):
@@ -107,3 +173,22 @@ class CaseResult(BaseModel):
         if v < 1:
             raise ValueError("case_version must be >= 1")
         return v
+
+    # Detail of the run
+    header_findings: list[Finding] = []     # Currency, totals, receipt checks
+    evidence: list[Evidence] = []           # Every evidence ID a finding may cite
+    allocations: list[dict[str, str]] = []  # Allocations this run would record
+
+    def all_findings(self) -> list[Finding]:
+        out = list(self.header_findings)
+        for line in self.line_results:
+            out.extend(line.findings)
+        return out
+
+    def not_evaluated_checks(self) -> list[str]:
+        return sorted(
+            {f.check for f in self.all_findings() if f.status == CheckStatus.CHECK_NOT_EVALUATED}
+        )
+
+    def evidence_map(self) -> dict[str, str]:
+        return {e.evidence_id: e.normalized_value or e.raw_value for e in self.evidence}

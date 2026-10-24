@@ -1,0 +1,12 @@
+[
+  {
+    "from_uom": "CS",
+    "to_uom": "EA",
+    "factor": "12",
+    "product_id": "PROD-CS-001",
+    "effective_date": "2026-01-01",
+    "expiry_date": null,
+    "source": "product_master_v1",
+    "approver": "product-data owner"
+  }
+]

@@ -8,17 +8,22 @@ Pydantic models for EDI transaction documents:
 
 All monetary fields use Money (never float).
 All quantity fields use Decimal (never float).
+
+Unit prices are Money built at full source precision (never Money.from_str, which
+rounds). price_basis is None when the source omits it: an unknown basis blocks the
+price check (INSUFFICIENT_EVIDENCE); it is never defaulted to 1 (PRD 17.1).
+`raw` / `raw_fields` keep the exact source strings for provenance.
 """
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
 from backend.models.common import Money, ReceiptEventType
-
 
 # ---------------------------------------------------------------------------
 # EDI 850 — Purchase Order
@@ -32,9 +37,12 @@ class POLine(BaseModel):
     product_id: str    # Qualified product identifier (SKU, UPC, buyer item number, etc.)
     ordered_qty: Decimal
     uom: str           # Unit of measure code, e.g. "EA", "CS"
-    unit_price: Money  # Price per price_basis units of uom
-    price_basis: int = 1  # Number of UOM units the price covers; must be > 0
+    unit_price: Money  # Price per price_basis units of uom (full precision)
+    price_basis: Decimal | None = None  # UOM units the price covers; None = unknown; > 0
     currency: str      # ISO 4217, e.g. "USD"
+    upc: str = ""
+    description: str = ""  # Untrusted free text; never sent to the AI
+    raw: dict[str, str] = {}  # Exact source strings for this line
 
     @field_validator("ordered_qty")
     @classmethod
@@ -45,8 +53,8 @@ class POLine(BaseModel):
 
     @field_validator("price_basis")
     @classmethod
-    def _basis_positive(cls, v: int) -> int:
-        if v <= 0:
+    def _basis_positive(cls, v: Decimal | None) -> Decimal | None:
+        if v is not None and v <= 0:
             raise ValueError("price_basis must be > 0")
         return v
 
@@ -62,6 +70,8 @@ class PurchaseOrder(BaseModel):
     lines: list[POLine]        # At least one line required
     content_hash: str          # "sha256:<hex>" of original source bytes; used for dedup
     source_path: str | None = None  # Path to raw source file, for provenance
+    ingested_at: datetime | None = None
+    raw_fields: dict[str, Any] = {}  # Full source document as parsed JSON
 
     @field_validator("lines")
     @classmethod
@@ -81,13 +91,17 @@ class InvoiceLine(BaseModel):
 
     line_id: str          # Invoice-unique line identifier
     po_reference: str     # PO ID this line references
-    line_reference: str   # PO line ID this line references
+    line_reference: str | None = None  # PO line ID, if the invoice states one
     product_id: str       # Should match the referenced PO line's product_id
     invoiced_qty: Decimal
     uom: str
-    unit_price: Money     # Invoice unit price
-    price_basis: int = 1  # Must be > 0
+    unit_price: Money     # Invoice unit price (full precision)
+    price_basis: Decimal | None = None  # None = unknown; > 0 when present
     currency: str         # ISO 4217
+    upc: str = ""
+    description: str = ""  # Untrusted free text; never sent to the AI
+    extended_price: Money | None = None  # Invoice-provided line extension
+    raw: dict[str, str] = {}
 
     @field_validator("invoiced_qty")
     @classmethod
@@ -98,8 +112,8 @@ class InvoiceLine(BaseModel):
 
     @field_validator("price_basis")
     @classmethod
-    def _basis_positive(cls, v: int) -> int:
-        if v <= 0:
+    def _basis_positive(cls, v: Decimal | None) -> Decimal | None:
+        if v is not None and v <= 0:
             raise ValueError("price_basis must be > 0")
         return v
 
@@ -110,10 +124,16 @@ class Invoice(BaseModel):
     invoice_id: str
     invoice_date: date
     po_references: list[str]   # All PO IDs referenced; at least one required
+    buyer_id: str              # Trading partners: PO lookup is scoped to buyer + supplier
+    supplier_id: str
     currency: str
     lines: list[InvoiceLine]
     content_hash: str
     source_path: str | None = None
+    total_amount: Money | None = None  # Invoice header total, if provided
+    charges: list[dict[str, str]] = []  # Header charges (freight, tax...): unsupported in P0
+    ingested_at: datetime | None = None
+    raw_fields: dict[str, Any] = {}
 
     @field_validator("po_references")
     @classmethod
@@ -185,3 +205,13 @@ class ReceivingAdvice(BaseModel):
         if not v:
             raise ValueError("ReceivingAdvice must have at least one line")
         return v
+
+
+class StoredDocument(BaseModel):
+    """A document stored but not reconciled (an 861 while P2 is disabled)."""
+
+    doc_type: str
+    content_hash: str
+    ingested_at: datetime
+    raw_fields: dict[str, Any] = {}
+    receipt: ReceivingAdvice | None = None  # Set when it validates against the P2 schema

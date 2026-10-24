@@ -1,0 +1,22 @@
+{
+  "_expected_result": "QUANTITY_VARIANCE",
+  "doc_type": "850",
+  "version": "1.0",
+  "po_number": "PO-AT08",
+  "po_date": "2026-03-01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-008",
+      "upc": "0001008",
+      "description": "Widget",
+      "quantity": "100",
+      "uom": "EA",
+      "unit_price": "2.00",
+      "price_basis_qty": "1"
+    }
+  ]
+}

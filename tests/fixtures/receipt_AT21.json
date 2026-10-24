@@ -1,0 +1,24 @@
+{
+  "_expected_result": "stored; receipt NOT_EVALUATED",
+  "doc_type": "861",
+  "version": "1.0",
+  "receipt_number": "RCV-AT21",
+  "receipt_date": "2026-03-10",
+  "po_number": "PO-AT01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "facility": "DC-01",
+  "lines": [
+    {
+      "line_id": "1",
+      "po_line_ref": "1",
+      "product_id": "PROD-EA-001",
+      "received_quantity": "100",
+      "accepted_quantity": "100",
+      "rejected_quantity": "0",
+      "damaged_quantity": "0",
+      "uom": "EA",
+      "event_type": "CUMULATIVE"
+    }
+  ]
+}

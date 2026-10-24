@@ -1,0 +1,25 @@
+{
+  "_expected_result": "INSUFFICIENT_EVIDENCE",
+  "doc_type": "810",
+  "version": "1.0",
+  "invoice_number": "INV-AT24",
+  "invoice_date": "2026-03-15",
+  "po_number": "PO-AT24",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-024",
+      "upc": "0001024",
+      "description": "Widget",
+      "quantity": "100",
+      "uom": "EA",
+      "unit_price": "2.00",
+      "price_basis_qty": "1",
+      "extended_price": "200.00"
+    }
+  ],
+  "total_amount": "250.00"
+}

@@ -1,9 +1,12 @@
 # Project Coding Rules (Non-Obvious Only)
 
-- `requirements.txt` is empty — always add new dependencies to it; nothing is pre-installed
-- SQLite `.db` files are gitignored; any DB initialization must be idempotent (recreatable from scratch)
-- `.streamlit/secrets.toml` is gitignored — document required secret keys in a `.env.example` or README section when adding integrations
-- `data/raw/`, `data/processed/`, `data/reference/` exist only as gitkeep placeholders — create subdirectories or files here as needed; do not move or rename the top-level data dirs
-- `backend/` is the sole Python package root; add all new modules as submodules of `backend/` (e.g., `backend/parser.py`, `backend/ai_resolver.py`)
-- No test framework is configured yet — when adding tests, add `pytest` to `requirements.txt` and co-locate test files or use a `tests/` directory at the project root
-- Type hints are expected on all function signatures (no enforcing linter yet, but follow PEP 8)
+- All price/quantity fields in JSON fixtures are `str` — cast to `decimal.Decimal` in `backend/parser.py`; never use `float` anywhere in the codebase
+- `ROUND_HALF_UP` is applied at line extension only — never round unit prices before computing extension
+- `backend/db.py` `init_db()` must be called at the top of `app.py` before any Streamlit page renders; all audit event writes must be transaction-wrapped — if write fails, raise `AuditPersistenceError`
+- `AI_PROVIDER=mock` default; `THREE_WAY_ENABLED=false` default — both read via `backend/config.py` `Settings`; keep stub and disabled-receipt paths intact always
+- Tests in `tests/`; acceptance tests in `tests/test_acceptance.py` (AT01–AT24, P0 gate); integration tests marked `@pytest.mark.integration`; fixture files in `tests/fixtures/`
+- `backend/reference.py` is the sole file I/O owner for `data/reference/` — comparator and comparator tests must not open those files directly
+- `INSUFFICIENT_EVIDENCE` is a valid result state, not an error — do not raise an exception; dependent checks become `NOT_EVALUATED`
+- `backend/parser.py` retains original source string values in `raw` fields alongside `Decimal` casts; computes SHA-256 content hash at parse time
+- `backend/exceptions.py` defines `ParseError`, `ReconciliationError`, `AuditPersistenceError` — use these, do not raise plain `ValueError` or `Exception`
+- Required dependencies: `streamlit`, `python-dotenv`, `pytest`, `ruff` `pydantic`, `pydantic-settings`, `ibm-watsonx-ai` (imported only when `AI_PROVIDER=watsonx`)

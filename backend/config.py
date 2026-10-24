@@ -26,6 +26,9 @@ class Settings(BaseSettings):
       ai_model_id       ← AI_MODEL_ID
       three_way_enabled ← THREE_WAY_ENABLED
       max_retry_attempts← MAX_RETRY_ATTEMPTS
+      watsonx_url       ← WATSONX_URL
+      watsonx_project_id← WATSONX_PROJECT_ID
+      ai_timeout_seconds← AI_TIMEOUT_SECONDS
     """
 
     model_config = SettingsConfigDict(
@@ -36,8 +39,16 @@ class Settings(BaseSettings):
     )
 
     database_path: str = "data/edi_resolve.db"
-    ai_provider: str = "mock"         # "mock" | "mock_unavailable" | "watsonx" | "openai"
+    ai_provider: str = "mock"         # "mock" | "mock_unavailable" | "watsonx"
     ai_api_key: str | None = None
     ai_model_id: str | None = None
     three_way_enabled: bool = False   # P2 feature gate; default off until AT01–AT24 pass
     max_retry_attempts: int = 3       # Bounded retry limit before TECHNICAL_HOLD
+    watsonx_url: str = "https://us-south.ml.cloud.ibm.com"
+    watsonx_project_id: str | None = None
+    ai_timeout_seconds: int = 20      # Provider call timeout before AI_UNAVAILABLE
+
+
+def get_settings() -> Settings:
+    """Fresh settings from the environment / .env on every call (cheap; test-friendly)."""
+    return Settings()

@@ -1,0 +1,25 @@
+{
+  "_expected_result": "PRICE_VARIANCE with $0.01 tolerance",
+  "doc_type": "810",
+  "version": "1.0",
+  "invoice_number": "INV-AT14B",
+  "invoice_date": "2026-03-15",
+  "po_number": "PO-AT14",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-014",
+      "upc": "0001014",
+      "description": "Widget",
+      "quantity": "1",
+      "uom": "EA",
+      "unit_price": "1.0101",
+      "price_basis_qty": "1",
+      "extended_price": "1.01"
+    }
+  ],
+  "total_amount": "1.01"
+}
