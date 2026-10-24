@@ -1,0 +1,32 @@
+{
+  "_expected_result": "REVIEW_LINK",
+  "doc_type": "850",
+  "version": "1.0",
+  "po_number": "PO-AT10",
+  "po_date": "2026-03-01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-010",
+      "upc": "0001010",
+      "description": "Widget",
+      "quantity": "50",
+      "uom": "EA",
+      "unit_price": "2.00",
+      "price_basis_qty": "1"
+    },
+    {
+      "line_id": "2",
+      "product_id": "PROD-EA-010",
+      "upc": "0001010",
+      "description": "Widget",
+      "quantity": "50",
+      "uom": "EA",
+      "unit_price": "2.00",
+      "price_basis_qty": "1"
+    }
+  ]
+}

@@ -4,15 +4,18 @@ This file provides guidance to agents when working with code in this repository.
 
 ## Project
 
-**EDI Resolve AI** — AI-powered EDI transaction discrepancy detection and resolution (SpartHill Hacks 2026 IBM AI Challenge). Python backend with a Streamlit dashboard.
+**EDIResolve AI** — AI-powered EDI transaction discrepancy detection and resolution (SpartHill Hacks 2026 IBM AI Challenge). Python backend with a Streamlit dashboard.
+
+**PRD:** `docs/PRD.md` — source of truth for scope and acceptance criteria
+**Build Plan:** `edi-resolve-plan.md` (project root) — 10-task implementation plan; P0 release gate = AT01–AT24 pass
 
 ## Stack
 
 - **Language**: Python (virtual env at `.venv/`)
-- **UI**: Streamlit (`streamlit run <app_file>`)
+- **UI**: Streamlit (`streamlit run app.py`)
 - **Database**: SQLite (`.db` files, gitignored)
-- **Config/Secrets**: `.env` file (gitignored); Streamlit secrets at `.streamlit/secrets.toml` (also gitignored — never commit)
-- No `pyproject.toml`, `setup.py`, or `Makefile` yet — project is in early scaffolding stage
+- **Config/Secrets**: `.env` (backend logic via `python-dotenv`); `.streamlit/secrets.toml` (Streamlit UI layer) — never commit either
+- **AI provider**: IBM watsonx.ai (Granite) via `ibm-watsonx-ai`, behind `backend/ai_resolver.py`; offline stub is the default (`AI_STUB_MODE=true`)
 
 ## Commands
 
@@ -20,39 +23,80 @@ This file provides guidance to agents when working with code in this repository.
 # Install dependencies
 pip install -r requirements.txt
 
-# Run Streamlit app (once entry point is created)
+# Run app
 streamlit run app.py
 
-# Run tests (pytest assumed; no config exists yet)
+# Run all tests
 pytest
-pytest path/to/test_file.py::test_function_name   # single test
-```
 
-> `requirements.txt` is currently empty — populate it as dependencies are added.
+# Run a single test
+pytest tests/test_parser.py::test_price_precision
+
+# Lint
+ruff check .
+```
 
 ## Data Layout
 
 ```
 data/
-  raw/        # raw EDI files (850 POs, 810 invoices) — gitkeep placeholder
-  processed/  # parsed/structured output — gitkeep placeholder
-  reference/  # reference/lookup data — gitkeep placeholder
+  raw/        # EDI 850 PO + 810 invoice JSON files (po_001.json, inv_001.json, ...)
+  processed/  # parsed/structured output (unused for now)
+  reference/  # uom_conversions.json, price_contracts.json
 ```
 
 ## Key Domain Concepts
 
-- **EDI 850**: Electronic purchase orders from retailers
-- **EDI 810**: Electronic invoices from suppliers
-- Discrepancy types to detect: price, quantity, UOM, product identifier mismatches
-- AI layer explains root causes and recommends resolutions
+- **EDI 850**: Purchase orders from retailers
+- **EDI 810**: Invoices from suppliers
+- Result states (complete list in plan): `MATCHED_2WAY` · `PRICE_VARIANCE` · `QUANTITY_VARIANCE` · `PARTIAL_BILLING` · `INSUFFICIENT_EVIDENCE` · `WAIT_DOCUMENT` · `REVIEW_LINK` · `QUARANTINED` · `DUPLICATE_CONFLICT` · `TECHNICAL_HOLD` · `NOT_EVALUATED` · `AI_ABSTAIN` · `AI_UNAVAILABLE`
+- `CHECK_NOT_EVALUATED` ≠ `CHECK_FAILED` — never conflate these
+- All price/quantity fields stored as `str` in JSON fixtures, cast to `decimal.Decimal` in `backend/parser.py` — never `float`
+- `ROUND_HALF_UP` applied at line extension only — not at unit price
 
-## Architecture Notes
+## Module Map
 
-- `backend/` package is scaffolded but empty — add modules here (parser, comparator, ai_resolver, etc.)
-- No frontend framework other than Streamlit — avoid introducing React/Node unless explicitly requested
-- Secrets must never be hardcoded; use `.env` + `python-dotenv` or Streamlit secrets
+```
+backend/
+  __init__.py
+  db.py           # init_db() — SQLite schema (atomic audit writes); call at app startup
+  models.py       # all dataclasses: LineItem, PO, Invoice, DiscrepancyRecord, AIExplanation, AuditEvent
+  exceptions.py   # ParseError, ReconciliationError, AuditPersistenceError
+  parser.py       # parse_po(path), parse_invoice(path) — SHA-256 hash + raw field retention
+  reference.py    # sole I/O for data/reference/; comparator must not open files directly
+  comparator.py   # compare() — deterministic rules only; no AI, no floats
+  allocation.py   # get_allocated_quantity() — cumulative PO allocation check (AT08)
+  ai_resolver.py  # explain() → AIExplanation; AI_STUB_MODE=true by default
+  service.py      # workflow: process(), rerun_case(), request_ai_explanation(), review_action()
+app.py            # Streamlit entry; calls init_db() before any page renders
+ui_shared.py      # Streamlit helpers: cached DB connection, demo scenarios, mode banner
+pages/
+  upload.py       # Upload & Process
+  review.py       # Exception Review (atomic audit write on submit)
+  audit.py        # Audit History (append-only)
+tests/
+  fixtures/       # AT01–AT24 labeled synthetic fixture JSON files
+  test_parser.py
+  test_reference.py
+  test_comparator.py
+  test_ai_resolver.py
+  test_db.py
+  test_ui.py          # headless Streamlit AppTest smoke tests
+  test_acceptance.py  # AT01–AT24 formal release gate tests
+```
+
+## Critical Rules
+
+- **Financial arithmetic**: `decimal.Decimal` everywhere; `ROUND_HALF_UP` at line extension only
+- **AI must not perform arithmetic** and must never receive raw EDI text (prompt injection risk)
+- **AI output must be labeled** in the UI as "AI Suggestion — requires human review"
+- **Reviewer reason required** before any approve/reject/escalate; stale/concurrent actions must fail gracefully
+- **Atomic audit writes**: if `AuditPersistenceError`, roll back state and display "Action not saved" — never silently succeed
+- **`init_db()`** is idempotent — safe to call on every app startup
+- **`AI_STUB_MODE=true`** default — real provider is opt-in; **`THREE_WAY_ENABLED=false`** default — P2 receipt matching is opt-in
+- **P0 release gate**: AT01–AT24 in `tests/test_acceptance.py` must all pass
 
 ## Code Style
 
-- Follow PEP 8; use type hints for all function signatures
-- No linter config exists yet — add `ruff` or `flake8` to `requirements.txt` when introducing linting
+- PEP 8; type hints on all function signatures
+- Linter: `ruff` — add to `requirements.txt`

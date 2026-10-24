@@ -1,0 +1,25 @@
+{
+  "_expected_result": "DUPLICATE_CONFLICT",
+  "doc_type": "810",
+  "version": "1.0",
+  "invoice_number": "INV-AT09",
+  "invoice_date": "2026-03-15",
+  "po_number": "PO-AT09",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-009",
+      "upc": "0001009",
+      "description": "Widget",
+      "quantity": "90",
+      "uom": "EA",
+      "unit_price": "2.00",
+      "price_basis_qty": "1",
+      "extended_price": "180.00"
+    }
+  ],
+  "total_amount": "180.00"
+}

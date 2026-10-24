@@ -1,0 +1,6 @@
+streamlit>=1.37
+python-dotenv>=1.0
+pytest>=8.0
+ruff>=0.5
+# AI provider: IBM watsonx.ai (Granite). Only imported when AI_STUB_MODE=false.
+ibm-watsonx-ai>=1.1

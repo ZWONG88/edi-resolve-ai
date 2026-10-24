@@ -1,0 +1,17 @@
+{
+  "_expected_result": "stored; receipt NOT_EVALUATED",
+  "doc_type": "861",
+  "version": "1.0",
+  "receipt_number": "RCV-AT21",
+  "po_number": "PO-AT01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-001",
+      "received_quantity": "100",
+      "uom": "EA"
+    }
+  ]
+}

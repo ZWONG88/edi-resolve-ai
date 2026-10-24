@@ -1,0 +1,207 @@
+[
+  {
+    "file": "po_AT01.json",
+    "doc_type": "850",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "inv_AT01.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "po_AT02.json",
+    "doc_type": "850",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "inv_AT02.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "po_AT03.json",
+    "doc_type": "850",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+    "file": "inv_AT03.json",
+    "doc_type": "810",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+    "file": "po_AT04.json",
+    "doc_type": "850",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "inv_AT04.json",
+    "doc_type": "810",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "po_AT05.json",
+    "doc_type": "850",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "inv_AT05.json",
+    "doc_type": "810",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "po_AT07.json",
+    "doc_type": "850",
+    "expected_result": "PARTIAL_BILLING"
+  },
+  {
+    "file": "inv_AT07.json",
+    "doc_type": "810",
+    "expected_result": "PARTIAL_BILLING"
+  },
+  {
+    "file": "po_AT08.json",
+    "doc_type": "850",
+    "expected_result": "QUANTITY_VARIANCE"
+  },
+  {
+    "file": "inv_AT08a.json",
+    "doc_type": "810",
+    "expected_result": "PARTIAL_BILLING"
+  },
+  {
+    "file": "inv_AT08b.json",
+    "doc_type": "810",
+    "expected_result": "QUANTITY_VARIANCE"
+  },
+  {
+    "file": "po_AT09.json",
+    "doc_type": "850",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "inv_AT09.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY then REPLAY_NOOP"
+  },
+  {
+    "file": "inv_AT09_conflict.json",
+    "doc_type": "810",
+    "expected_result": "DUPLICATE_CONFLICT"
+  },
+  {
+    "file": "inv_AT10_missing_po.json",
+    "doc_type": "810",
+    "expected_result": "WAIT_DOCUMENT"
+  },
+  {
+    "file": "po_AT10_repeated.json",
+    "doc_type": "850",
+    "expected_result": "REVIEW_LINK"
+  },
+  {
+    "file": "inv_AT10_repeated.json",
+    "doc_type": "810",
+    "expected_result": "REVIEW_LINK"
+  },
+  {
+    "file": "inv_AT11_malformed.json",
+    "doc_type": "810",
+    "expected_result": "QUARANTINED"
+  },
+  {
+    "file": "inv_AT11_unsupported.json",
+    "doc_type": "810",
+    "expected_result": "QUARANTINED"
+  },
+  {
+    "file": "po_AT12.json",
+    "doc_type": "850",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+    "file": "inv_AT12_currency.json",
+    "doc_type": "810",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+    "file": "inv_AT12_freight.json",
+    "doc_type": "810",
+    "expected_result": "NOT_EVALUATED"
+  },
+  {
+    "file": "po_AT13a.json",
+    "doc_type": "850",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "inv_AT13a.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "po_AT13b.json",
+    "doc_type": "850",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "inv_AT13b.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY"
+  },
+  {
+    "file": "po_AT14.json",
+    "doc_type": "850",
+    "expected_result": "tolerance-dependent"
+  },
+  {
+    "file": "inv_AT14a.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY with $0.01 tolerance"
+  },
+  {
+    "file": "inv_AT14b.json",
+    "doc_type": "810",
+    "expected_result": "PRICE_VARIANCE with $0.01 tolerance"
+  },
+  {
+    "file": "po_AT15.json",
+    "doc_type": "850",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "inv_AT15.json",
+    "doc_type": "810",
+    "expected_result": "PRICE_VARIANCE"
+  },
+  {
+    "file": "receipt_AT21.json",
+    "doc_type": "861",
+    "expected_result": "stored; receipt NOT_EVALUATED"
+  },
+  {
+    "file": "inv_AT22_corrected.json",
+    "doc_type": "810",
+    "expected_result": "MATCHED_2WAY after rerun"
+  },
+  {
+    "file": "po_AT23.json",
+    "doc_type": "850",
+    "expected_result": "n/a"
+  },
+  {
+    "file": "inv_AT23_other_partner.json",
+    "doc_type": "810",
+    "expected_result": "WAIT_DOCUMENT"
+  },
+  {
+    "file": "po_AT24.json",
+    "doc_type": "850",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+    "file": "inv_AT24.json",
+    "doc_type": "810",
+    "expected_result": "INSUFFICIENT_EVIDENCE"
+  }
+]

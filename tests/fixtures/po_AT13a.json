@@ -1,0 +1,22 @@
+{
+  "_expected_result": "MATCHED_2WAY",
+  "doc_type": "850",
+  "version": "1.0",
+  "po_number": "PO-AT13A",
+  "po_date": "2026-03-01",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-013",
+      "upc": "0001013",
+      "description": "Widget",
+      "quantity": "3",
+      "uom": "EA",
+      "unit_price": "0.335",
+      "price_basis_qty": "1"
+    }
+  ]
+}

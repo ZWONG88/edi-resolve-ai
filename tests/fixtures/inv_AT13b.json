@@ -1,0 +1,25 @@
+{
+  "_expected_result": "MATCHED_2WAY",
+  "doc_type": "810",
+  "version": "1.0",
+  "invoice_number": "INV-AT13B",
+  "invoice_date": "2026-03-15",
+  "po_number": "PO-AT13B",
+  "buyer": "RetailCo",
+  "supplier": "SupplierInc",
+  "currency": "USD",
+  "lines": [
+    {
+      "line_id": "1",
+      "product_id": "PROD-EA-113",
+      "upc": "0001113",
+      "description": "Widget",
+      "quantity": "20",
+      "uom": "EA",
+      "unit_price": "10.00",
+      "price_basis_qty": "100",
+      "extended_price": "2.00"
+    }
+  ],
+  "total_amount": "2.00"
+}
