@@ -152,10 +152,12 @@ if st.session_state.get("selected_case"):
     if st.button("Open in Exception Review →"):
         st.switch_page("pages/review.py")
 
-with st.expander("Demo tools"):
+# Stay open while confirming: the rerun from ticking the box drops one-time messages above,
+# which would otherwise collapse this expander and hide the Reset button.
+with st.expander("Demo tools", expanded=st.session_state.get("confirm_reset", False)):
     st.caption("Clears test/sample cases only (sample scenarios and dataset-folder imports). "
                "Uploaded (real) cases and their audit history are kept.")
-    confirm = st.checkbox("I understand this deletes all test/sample data")
+    confirm = st.checkbox("I understand this deletes all test/sample data", key="confirm_reset")
     if st.button("Reset test data", disabled=not confirm):
         try:
             counts = orchestrator.reset_test_data(conn)

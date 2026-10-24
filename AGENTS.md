@@ -42,7 +42,8 @@ ruff check .
 data/
   raw/        # EDI 850 PO + 810 invoice JSON files (po_001.json, inv_001.json, ...)
   processed/  # parsed/structured output (unused for now)
-  reference/  # uom_conversions.json, price_contracts.json
+  reference/  # uom_conversions.json, price_contracts.json,
+              #   master_catalog.json (synthetic catalogue — display enrichment only)
 ```
 
 ## Key Domain Concepts
@@ -66,7 +67,8 @@ backend/
   exceptions.py   # ParseError, ReconciliationError, AuditPersistenceError
   parser.py       # parse_po(), parse_invoice() → Pydantic models; "sha256:" hash + raw strings
   adapters.py     # team-format JSON (transaction_type, arrays) → models; exact Decimals
-  reference.py    # sole I/O for data/reference/; comparator must not open files directly
+  reference.py    # sole I/O for data/reference/; comparator must not open files directly;
+                  #   load_master_catalog() for the synthetic catalogue (UI enrichment only)
   comparator.py   # compare() — deterministic rules only; no AI, no floats
   allocation.py   # cumulative PO (AT08) and accepted-receipt (AT31) allocations
   receipts.py     # 861 ledger: incremental/cumulative, replay, ambiguity
@@ -104,6 +106,7 @@ tests/
 - **`init_db()`** is idempotent — safe to call on every app startup
 - **`AI_PROVIDER=mock`** default — real provider (`watsonx`) is opt-in; all config goes through `backend/config.py`; **`THREE_WAY_ENABLED=true`** default — the team rules doc makes 850+810+861 matching the core flow; `false` falls back to two-way (no auto-approval, no 820)
 - **Team rules doc** (`docs/rules-comparison.md`) is followed: auto-approve clean three-way matches, short-pay discrepancies, generate EDI 820 files — **never transmit** them; bill on **accepted** (not received) quantity
+- **Master catalogue** (`data/reference/master_catalog.json`) is synthetic and **enrichment only** (PRD §17.3): it contains random price picks and inferred pack sizes, so it is never a source of price, pack size, UOM factor or identity for decisions. It is shown via `orchestrator.catalog_enrichment()`, never passed to the comparator, and kept out of `reference_version()`
 - Team-format datasets (`transaction_type` JSON) are read only through `backend/adapters.py`; dollar impact/disposition only in `backend/disposition.py`
 - **Release gate**: AT01–AT24 (`tests/test_acceptance.py`), AT25–AT35 except AT33 (`tests/test_three_way.py`) and the frozen team dataset outcomes (`tests/test_datasets.py`) must all pass
 

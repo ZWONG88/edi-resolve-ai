@@ -50,6 +50,9 @@ from backend.models.reconciliation import (
 
 # Reference models
 from backend.models.reference import (
+    CatalogPriceRecord,
+    CatalogProduct,
+    CatalogSelection,
     PriceContract,
     ProductMaster,
     UOMConversion,
@@ -87,6 +90,9 @@ __all__ = [
     "UOMConversion",
     "PriceContract",
     "ProductMaster",
+    "CatalogSelection",
+    "CatalogPriceRecord",
+    "CatalogProduct",
     # Reconciliation models
     "BLOCKING_STATES",
     "STATE_PRECEDENCE",

@@ -59,3 +59,6 @@ by the totals check.
   They're inferred from quantity and price ratios. The dataset author can confirm them.
 - **The 820 format** is team-style JSON. If a real X12 820 is needed, it can be rendered from
   the same payload.
+- **The master catalogue** (`data/reference/master_catalog.json`) is synthetic and is used only to
+  show product names and context. Its prices and pack sizes never affect matching, dispositions or
+  820s (PRD §17.3).

@@ -19,7 +19,7 @@ from typing import Any
 from backend.config import get_settings
 from backend.models import AIExplanation, CaseResult, CheckStatus
 
-PROMPT_VERSION = "explain-v1"
+PROMPT_VERSION = "explain-v2"
 STUB_MODEL = "stub-rules-v1"
 DEFAULT_WATSONX_MODEL = "ibm/granite-3-8b-instruct"
 
@@ -48,9 +48,12 @@ REQUIRED_KEYS = {
 
 SYSTEM_PROMPT = (
     "You are a reconciliation assistant for EDI purchase orders and invoices. "
-    "You receive a JSON evidence bundle produced by a deterministic rules engine. "
+    "You receive JSON with an evidence_bundle produced by a deterministic rules engine, "
+    "plus allowed_finding_ids and allowed_evidence_ids. "
     "Explain the findings as hypotheses for a human reviewer. Rules:\n"
-    "1. Only cite finding IDs and evidence IDs that appear in the bundle.\n"
+    "1. finding_ids must come only from allowed_finding_ids and cited_evidence_ids only "
+    "from allowed_evidence_ids, copied exactly. Never construct an ID by analogy (an "
+    "invoice field does not imply a matching PO field).\n"
     "2. Do not perform arithmetic. Only repeat numbers exactly as they appear in the bundle.\n"
     "3. Do not invent contracts, amendments, identifiers or facts.\n"
     "4. If information is missing, say so and list it in missing_evidence.\n"
@@ -79,7 +82,13 @@ def provider_name() -> str:
 def build_evidence_bundle(result: CaseResult) -> dict[str, Any]:
     """Minimal structured evidence for the AI. No descriptions, no raw documents."""
     findings = []
+    computed: dict[str, str] = {}  # rules-engine values a finding compares, made citable
     for f in result.all_findings():
+        evidence_ids = list(f.evidence_ids)
+        if f.check == "extension_vs_po" and f.po_value is not None:
+            key = f"rules.{f.finding_id}.expected_extension_at_po_price"
+            computed[key] = f.po_value
+            evidence_ids.append(key)
         findings.append(
             {
                 "finding_id": f.finding_id,
@@ -90,7 +99,7 @@ def build_evidence_bundle(result: CaseResult) -> dict[str, Any]:
                 "invoice_value": f.invoice_value,
                 "delta": f.delta,
                 "tolerance": f.tolerance_applied,
-                "evidence_ids": f.evidence_ids,
+                "evidence_ids": evidence_ids,
             }
         )
     missing = [
@@ -102,7 +111,8 @@ def build_evidence_bundle(result: CaseResult) -> dict[str, Any]:
         "case_state": result.overall_status.value,
         "policy_version": result.policy_version,
         "findings": findings,
-        "evidence": {k: str(v)[:_MAX_VALUE_LEN] for k, v in result.evidence_map().items()},
+        "evidence": {k: str(v)[:_MAX_VALUE_LEN]
+                     for k, v in {**result.evidence_map(), **computed}.items()},
         "missing_facts": missing,
         "allowed_actions": sorted(ALLOWED_ACTIONS),
     }
@@ -340,6 +350,14 @@ def watsonx_generate(system_prompt: str, user_content: str) -> str:
     return response["choices"][0]["message"]["content"]
 
 
+def prompt_payload(bundle: dict[str, Any]) -> str:
+    """The user message: the bundle plus the exact IDs the model may cite."""
+    finding_ids = sorted(f["finding_id"] for f in bundle["findings"])
+    return json.dumps({"evidence_bundle": bundle, "allowed_finding_ids": finding_ids,
+                       "allowed_evidence_ids": sorted(set(bundle["evidence"]) | set(finding_ids))},
+                      sort_keys=True)
+
+
 def explain(
     bundle: dict[str, Any],
     provider: str | None = None,
@@ -362,7 +380,7 @@ def explain(
 
     model = _watsonx_model_id() if generate is watsonx_generate else "custom-provider"
     timeout = timeout_seconds or get_settings().ai_timeout_seconds
-    user_content = json.dumps(bundle, sort_keys=True)
+    user_content = prompt_payload(bundle)
     pool = ThreadPoolExecutor(max_workers=1)
     try:
         raw = pool.submit(generate, SYSTEM_PROMPT, user_content).result(timeout=timeout)

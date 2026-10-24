@@ -144,3 +144,32 @@ def test_watsonx_live(monkeypatch) -> None:
                             timeout_seconds=60)
     print(e)
     assert e.status != "AI_UNAVAILABLE", e.uncertainty_note
+
+
+def test_prompt_lists_exact_citable_ids() -> None:
+    """The model is told exactly which IDs it may cite, so it cannot guess look-alikes."""
+    b = bundle("po_AT04.json", "inv_AT04.json")
+    seen = {}
+
+    def capture(system: str, user: str) -> str:
+        seen["user"] = json.loads(user)
+        return "{}"
+
+    ai_resolver.explain(b, generate=capture)
+    assert seen["user"]["evidence_bundle"] == b
+    assert seen["user"]["allowed_finding_ids"] == sorted(f["finding_id"] for f in b["findings"])
+    assert set(b["evidence"]) <= set(seen["user"]["allowed_evidence_ids"])
+    assert "po.1.extended_price" not in seen["user"]["allowed_evidence_ids"]
+
+
+def test_expected_extension_is_citable_evidence() -> None:
+    """The PO-side extension the rules engine compared has its own citable evidence ID."""
+    b = bundle("po_AT04.json", "inv_AT04.json")
+    ext = next(f for f in b["findings"] if f["check"] == "extension_vs_po")
+    key = f"rules.{ext['finding_id']}.expected_extension_at_po_price"
+    assert key in ext["evidence_ids"] and b["evidence"][key] == ext["po_value"] == "200.00"
+    reply = {"status": "OK", "finding_ids": [ext["finding_id"]], "cited_evidence_ids": [key],
+             "possible_cause": "Invoice extension 210.00 vs 200.00 at the PO price.",
+             "uncertainty_note": "", "missing_evidence": [],
+             "suggested_next_action": "VERIFY_CONTRACT_PRICE"}
+    assert ai_resolver.validate_explanation(reply, b, "test").status == "OK"

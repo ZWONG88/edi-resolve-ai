@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from backend import db, orchestrator
-from backend.exceptions import ReviewValidationError
+from backend.exceptions import AuditPersistenceError, ReviewValidationError
 from backend.models import ReviewActionType, ReviewRequest
 from tests import team_docs as t
 from tests.conftest import DATASETS, REFERENCE
@@ -159,3 +159,22 @@ def test_reset_deletes_only_test_data(conn, monkeypatch) -> None:
     assert (again["cases"], again["documents"], again["audit_events"]) == (0, 0, 0)
     assert orchestrator.rerun_case(conn, real.case_id, reference_dir=REFERENCE) == (
         "MATCHED_3WAY")
+
+
+def test_ai_audit_failure_rolls_back_explanation(conn, run, monkeypatch) -> None:
+    """PRD 20.2: if the AI audit event cannot be saved, the explanation is not cached."""
+    out = run("inv_AT04.json", "po_AT04.json")
+    real = db.write_audit_event
+
+    def failing(c, event):
+        if event.actor == "ai-resolver":
+            raise AuditPersistenceError("disk full")
+        return real(c, event)
+
+    monkeypatch.setattr(db, "write_audit_event", failing)
+    with pytest.raises(AuditPersistenceError):
+        orchestrator.request_ai_explanation(conn, out.case_id)
+    assert orchestrator.get_cached_explanation(conn, out.case_id, 1) is None
+    monkeypatch.setattr(db, "write_audit_event", real)
+    expl, rec_v = orchestrator.request_ai_explanation(conn, out.case_id)
+    assert rec_v is not None and orchestrator.get_cached_explanation(conn, out.case_id, 1)
