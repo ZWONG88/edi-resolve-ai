@@ -13,8 +13,16 @@ load_dotenv()
 
 from backend import ai_resolver, orchestrator  # noqa: E402  (env must load first)
 from backend.config import get_settings  # noqa: E402
+from backend.models import AIExplanation  # noqa: E402
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
+BRAND_MARK = Path(__file__).resolve().parent / "assets" / "reconcileai.svg"
+NAV_ITEMS = (
+    ("Reconciliations", "pages/workspace.py", ":material/dashboard:"),
+    ("Upload & Process", "pages/upload.py", ":material/upload_file:"),
+    ("Exception Review", "pages/review.py", ":material/rule:"),
+    ("Audit History", "pages/audit.py", ":material/history:"),
+)
 
 # Demo scenarios: label -> (PO file or None, invoice file, optional 861 file)
 SCENARIOS: dict[str, tuple[str | None, str, str | None]] = {
@@ -55,11 +63,18 @@ STATE_COLORS = {
     "QUANTITY_VARIANCE": "orange",
     "INSUFFICIENT_EVIDENCE": "violet",
     "NOT_EVALUATED": "violet",
-    "WAIT_DOCUMENT": "gray",
-    "REVIEW_LINK": "gray",
+    "WAIT_DOCUMENT": "blue",
+    "REVIEW_LINK": "blue",
     "QUARANTINED": "red",
     "DUPLICATE_CONFLICT": "red",
     "TECHNICAL_HOLD": "red",
+    "OPEN": "blue",
+    "RESOLUTION_APPROVED": "green",
+    "RECOMMENDATION_REJECTED": "orange",
+    "ESCALATED": "violet",
+    "CHECK_PASSED": "green",
+    "CHECK_FAILED": "red",
+    "CHECK_NOT_EVALUATED": "violet",
 }
 
 
@@ -94,12 +109,48 @@ def badge(state: str) -> str:
     return f":{STATE_COLORS.get(state, 'gray')}[**{state}**]"
 
 
+def render_ai_explanation(expl: AIExplanation) -> None:
+    """Render the validated explanation contract, including safe failure states."""
+    with st.container(border=True):
+        st.markdown("##### 🤖 AI Suggestion — requires human review")
+        st.markdown(f"**Status:** `{expl.status}` · model `{expl.model_version}` · "
+                    f"prompt `{expl.prompt_version}`")
+        if expl.status == "AI_UNAVAILABLE":
+            st.warning("The AI provider is unavailable. Deterministic findings remain available; "
+                       "review the evidence below or retry the suggestion later.")
+        elif expl.status == "AI_ABSTAIN":
+            st.info("The AI could not make a supported suggestion. Use the deterministic "
+                    "findings and request any missing evidence before deciding.")
+        if expl.possible_cause:
+            st.markdown(f"**Possible cause (hypothesis):** {expl.possible_cause}")
+        if expl.suggested_next_action:
+            st.markdown(f"**Suggested next action:** `{expl.suggested_next_action}`")
+        if expl.uncertainty_note:
+            st.markdown(f"**Uncertainty:** {expl.uncertainty_note}")
+        if expl.missing_evidence:
+            st.markdown("**Missing evidence:** " + ", ".join(expl.missing_evidence))
+        st.markdown("**Cited evidence IDs:** "
+                    + (", ".join(f"`{item}`" for item in expl.cited_evidence_ids) or "—"))
+
+
 def mode_banner() -> None:
     ai_mode = {
         "mock": "Mock (offline stub)",
         "mock_unavailable": "Mock — always unavailable",
         "watsonx": "IBM watsonx.ai Granite",
     }.get(ai_resolver.provider_name(), f"Unsupported ({ai_resolver.provider_name()})")
+    if st.session_state.get("_app_navigation_enabled"):
+        active_title = st.session_state.get("_active_navigation_title")
+        for title, page_path, icon in NAV_ITEMS:
+            if st.sidebar.button(
+                title,
+                type="primary" if title == active_title else "secondary",
+                icon=icon,
+                width="stretch",
+                key=f"app-nav::{title}",
+            ):
+                st.switch_page(page_path)
+    st.sidebar.divider()
     three_way = get_settings().three_way_enabled
     mode = "Three-way (850 + 810 + 861)" if three_way else "Two-way (850 + 810)"
     st.sidebar.markdown(f"**Mode:** {mode}  \n**AI:** {ai_mode}")
