@@ -15,7 +15,7 @@ This file provides guidance to agents when working with code in this repository.
 - **UI**: Streamlit (`streamlit run app.py`)
 - **Database**: SQLite (`.db` files, gitignored)
 - **Config/Secrets**: `.env` (backend logic via `python-dotenv`); `.streamlit/secrets.toml` (Streamlit UI layer) — never commit either
-- **AI provider**: IBM watsonx.ai (Granite) via `ibm-watsonx-ai`, behind `backend/ai_resolver.py`; offline stub is the default (`AI_STUB_MODE=true`)
+- **AI provider**: IBM watsonx.ai (Granite) via `ibm-watsonx-ai`, behind `backend/ai_resolver.py`; offline mock is the default (`AI_PROVIDER=mock`)
 
 ## Commands
 
@@ -59,15 +59,18 @@ data/
 ```
 backend/
   __init__.py
+  config.py       # Settings (pydantic-settings) — every env var; get_settings()
   db.py           # init_db() — SQLite schema (atomic audit writes); call at app startup
-  models.py       # all dataclasses: LineItem, PO, Invoice, DiscrepancyRecord, AIExplanation, AuditEvent
+  models/         # Pydantic v2 contract (from PR #1): common, documents, reference,
+                  #   reconciliation, review, ai — import via `from backend.models import ...`
   exceptions.py   # ParseError, ReconciliationError, AuditPersistenceError
-  parser.py       # parse_po(path), parse_invoice(path) — SHA-256 hash + raw field retention
+  parser.py       # parse_po(), parse_invoice() → Pydantic models; "sha256:" hash + raw strings
   reference.py    # sole I/O for data/reference/; comparator must not open files directly
   comparator.py   # compare() — deterministic rules only; no AI, no floats
   allocation.py   # get_allocated_quantity() — cumulative PO allocation check (AT08)
-  ai_resolver.py  # explain() → AIExplanation; AI_STUB_MODE=true by default
-  service.py      # workflow: process(), rerun_case(), request_ai_explanation(), review_action()
+  ai_resolver.py  # explain() → AIExplanation; AI_PROVIDER=mock | mock_unavailable | watsonx
+  orchestrator.py # the ONLY backend module pages import: process(), rerun_case(),
+                  #   request_ai_explanation(), review_action(ReviewRequest), list_*()
 app.py            # Streamlit entry; calls init_db() before any page renders
 ui_shared.py      # Streamlit helpers: cached DB connection, demo scenarios, mode banner
 pages/
@@ -93,10 +96,12 @@ tests/
 - **Reviewer reason required** before any approve/reject/escalate; stale/concurrent actions must fail gracefully
 - **Atomic audit writes**: if `AuditPersistenceError`, roll back state and display "Action not saved" — never silently succeed
 - **`init_db()`** is idempotent — safe to call on every app startup
-- **`AI_STUB_MODE=true`** default — real provider is opt-in; **`THREE_WAY_ENABLED=false`** default — P2 receipt matching is opt-in
+- **`AI_PROVIDER=mock`** default — real provider (`watsonx`) is opt-in; all config goes through `backend/config.py`; **`THREE_WAY_ENABLED=false`** default — P2 receipt matching is opt-in
 - **P0 release gate**: AT01–AT24 in `tests/test_acceptance.py` must all pass
 
 ## Code Style
 
 - PEP 8; type hints on all function signatures
-- Linter: `ruff` — add to `requirements.txt`
+- Linter: `ruff` (config in `pyproject.toml`)
+- Unit prices are `Money(amount=...)` at full precision — never `Money.from_str()` (it rounds to cents)
+- `price_basis` is `None` when the source omits it — never default it to 1

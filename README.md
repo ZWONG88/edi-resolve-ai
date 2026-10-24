@@ -18,7 +18,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The app runs fully offline with a rules-based AI stub. Open **Upload & Process**, pick a
+The app runs fully offline with a rules-based AI mock (`AI_PROVIDER=mock`). Open **Upload & Process**, pick a
 sample scenario (for example *AT04 · Price variance*), click **Process**, then open
 **Exception Review**.
 
@@ -34,12 +34,16 @@ ruff check .
 
 1. `cp .env.example .env`
 2. Fill in:
-   - `WATSONX_API_KEY`: from cloud.ibm.com, then **Manage → Access (IAM) → API keys**
+   - `AI_API_KEY`: from cloud.ibm.com, then **Manage → Access (IAM) → API keys**
    - `WATSONX_PROJECT_ID`: from dataplatform.cloud.ibm.com/wx, then your project, **Manage → General**
    - `WATSONX_URL`: your region, e.g. `https://us-south.ml.cloud.ibm.com`
-   - `WATSONX_MODEL_ID`: a Granite instruct model available in your region (default
+   - `AI_MODEL_ID`: a Granite instruct model available in your region (default
      `ibm/granite-3-8b-instruct`)
-3. Set `AI_STUB_MODE=false` and restart the app.
+3. Set `AI_PROVIDER=watsonx` and restart the app.
+
+`AI_PROVIDER=mock_unavailable` makes every AI call fail safely. Use it to demo that
+deterministic findings and reviewer actions keep working when the AI is down (AT16).
+All settings live in `backend/config.py`. See `.env.example` for the full list.
 
 AI runs **on demand** (the *Get AI suggestion* button on an open exception) and is
 **cached per case evidence version**. A full demo uses only a few dozen calls, which fits
@@ -56,14 +60,32 @@ comfortably in the watsonx.ai Lite plan.
 
 | Module | Role |
 |---|---|
-| `backend/parser.py` | Validates 850/810 JSON and keeps the original strings. Every number is a `Decimal` and JSON floats are rejected. Each document gets a SHA-256 provenance hash. |
+| `backend/models/` | Shared Pydantic v2 contract (from PR #1): `PurchaseOrder`, `Invoice`, `Money`, `Evidence`, `CaseResult`, `ReviewRequest`, ... |
+| `backend/config.py` | `Settings` (pydantic-settings): every environment variable in one place. |
+| `backend/parser.py` | Validates 850/810 JSON into the Pydantic models and keeps the original strings. Every number is a `Decimal` and JSON floats are rejected. Each document gets a `sha256:` provenance hash. |
 | `backend/reference.py` | The only reader of `data/reference/` (UOM conversions, price contracts). Missing, expired or overlapping records are surfaced, never guessed. |
 | `backend/comparator.py` | Pure rules engine. `Q_base = Q × f`, `P_base = P / (b × f)`, `ROUND_HALF_UP` only at line extension, configurable tolerances (zero by default). |
 | `backend/allocation.py` | Cumulative invoice-vs-PO allocation, so over-billing across invoices is caught. |
 | `backend/ai_resolver.py` | Builds the evidence bundle (no raw EDI, no free text). Calls Granite and **validates** the output: unknown citations, numbers that disagree with the rules, invented IDs or disallowed actions all mean the narrative is discarded. |
-| `backend/service.py` | Workflow: ingest, dedupe/replay, reconcile with bounded retry, review actions, rerun on corrected evidence. |
+| `backend/orchestrator.py` | The only backend module the UI imports. Covers ingest, dedupe/replay, reconcile with bounded retry, review actions (`ReviewRequest`) and rerun on corrected evidence. |
 | `backend/db.py` | SQLite. Each state change and its audit event are committed in a single transaction. |
 | `pages/` | Streamlit pages: Upload & Process, Exception Review, Audit History. |
+
+### Parser output contract (for the X12 parser)
+
+Any upstream parser, such as a real X12 850/810 reader, should produce the models in
+`backend.models`:
+
+```python
+from backend.models import PurchaseOrder, POLine, Invoice, InvoiceLine, Money
+```
+
+- Quantities are `Decimal`. Prices are `Money(amount=Decimal("0.335"))` at full precision.
+  Never use `Money.from_str()` for unit prices, because it rounds to cents.
+- `price_basis` is `None` when the source doesn't state it. Never default it to `1`.
+- `Invoice` must carry `buyer_id` and `supplier_id`, because PO lookup is scoped to the trading partner.
+- `InvoiceLine.line_reference` is optional. Without it, lines link by product ID, then UPC.
+  If more than one PO line matches, the case goes to `REVIEW_LINK`.
 
 ### Result states
 

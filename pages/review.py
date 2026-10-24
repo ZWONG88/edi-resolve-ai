@@ -7,20 +7,22 @@ import uuid
 
 import pandas as pd
 import streamlit as st
+from pydantic import ValidationError
 
-from backend import db, service
+from backend import orchestrator
 from backend.exceptions import (
     AuditPersistenceError,
     ParseError,
     ReviewValidationError,
     StaleVersionError,
 )
-from ui_shared import mode_banner, badge, get_conn
+from backend.models import ReviewActionType, ReviewRequest
+from ui_shared import badge, get_conn, mode_banner
 
 mode_banner()
 st.title("Exception Review")
 conn = get_conn()
-cases = db.list_cases(conn)
+cases = orchestrator.list_cases(conn)
 if not cases:
     st.info("No cases yet. Process a PO and invoice on the Upload & Process page.")
     st.stop()
@@ -41,7 +43,7 @@ if not ids:
 default = st.session_state.get("selected_case")
 case_id = st.selectbox("Open case", ids, index=ids.index(default) if default in ids else 0)
 st.session_state["selected_case"] = case_id
-detail = service.case_detail(conn, case_id)
+detail = orchestrator.case_detail(conn, case_id)
 case, result = detail["case"], detail["result"]
 
 # The version the reviewer is looking at; actions against an older version are refused.
@@ -49,7 +51,7 @@ loaded_key = f"loaded_version::{case_id}"
 if loaded_key not in st.session_state:
     st.session_state[loaded_key] = case["version"]
 if case["version"] != st.session_state[loaded_key]:
-    st.warning(service.STALE_CASE)
+    st.warning(orchestrator.STALE_CASE)
     if st.button("Refresh case"):
         st.session_state[loaded_key] = case["version"]
         st.rerun()
@@ -78,9 +80,9 @@ for note in result.get("notes", []):
     st.info(note)
 
 # Line-level values: original vs normalized side by side
-for rec in result.get("records", []):
-    st.subheader(f"Invoice line {rec['invoice_line']} → PO line {rec['po_line'] or '—'}  "
-                 f"{badge(rec['result_state'])}")
+for rec in result.get("line_results", []):
+    st.subheader(f"Invoice line {rec['invoice_line_id']} → PO line "
+                 f"{rec['po_line_id'] or '—'}  {badge(rec['status'])}")
     fields = ["quantity", "uom", "unit_price", "price_basis_qty", "extended_price"]
     rows = []
     for field in fields:
@@ -117,7 +119,8 @@ if findings:
                      hide_index=True, use_container_width=True)
 if result.get("evidence"):
     with st.expander("Evidence (source pointers and values)"):
-        st.json(result["evidence"])
+        st.dataframe(pd.DataFrame(result["evidence"]), hide_index=True,
+                     use_container_width=True)
 
 # AI suggestion (on demand, cached per evidence version)
 st.subheader("AI suggestion")
@@ -127,7 +130,7 @@ if case["status"] == "MATCHED_2WAY":
 elif expl is None:
     if st.button("Get AI suggestion"):
         with st.spinner("Requesting explanation..."):
-            expl, _ = service.request_ai_explanation(conn, case_id)
+            expl, _ = orchestrator.request_ai_explanation(conn, case_id)
         if expl.status == "AI_UNAVAILABLE":
             st.warning(f"AI_UNAVAILABLE — {expl.uncertainty_note}")
         else:
@@ -152,7 +155,7 @@ with st.form(f"review::{case_id}"):
     action = st.radio("Action", ["Approve", "Reject", "Escalate"], horizontal=True)
     reason = st.text_area("Reason (required)")
     owner = st.selectbox("Escalation owner (required for Escalate)",
-                         ["", *service.ESCALATION_OWNERS])
+                         ["", *orchestrator.ESCALATION_OWNERS])
     close = st.checkbox("Approve as a closing exception disposition (never becomes MATCHED)")
     use_rec = st.checkbox("This decision applies the AI suggestion shown above",
                           disabled=detail["recommendation_version"] is None)
@@ -163,17 +166,21 @@ if submitted:
     key_name = f"idem::{case_id}::{expected}::{action}"
     st.session_state.setdefault(key_name, uuid.uuid4().hex)  # retries reuse the same key
     try:
-        service.review_action(
-            conn, case_id, action.lower(), reason, expected, st.session_state[key_name],
-            owner=owner or None, close=close,
+        request = ReviewRequest(
+            case_id=case_id, case_version=expected, action=ReviewActionType(action.upper()),
+            reason=reason, escalation_owner=owner or None,
+            idempotency_key=st.session_state[key_name], close=close,
             recommendation_version=detail["recommendation_version"] if use_rec else None,
         )
+        orchestrator.review_action(conn, request)
+    except ValidationError as exc:
+        st.error("; ".join(err["msg"].removeprefix("Value error, ") for err in exc.errors()))
     except ReviewValidationError as exc:
         st.error(str(exc))
     except StaleVersionError as exc:
         st.error(str(exc))
     except AuditPersistenceError:
-        st.error(service.ACTION_NOT_SAVED)
+        st.error(orchestrator.ACTION_NOT_SAVED)
     else:
         st.session_state[loaded_key] = expected + 1
         st.success(f"{action} recorded with audit event.")
@@ -188,12 +195,12 @@ if case["invoice_id"]:
                                      key=f"fix::{case_id}")
         if st.button("Rerun checks"):
             try:
-                state = service.rerun_case(conn, case_id,
+                state = orchestrator.rerun_case(conn, case_id,
                                            corrected.getvalue() if corrected else None)
             except ParseError as exc:
                 st.error(f"Upload failed: {exc.field_name} — {exc.message}")
             except AuditPersistenceError:
-                st.error(service.ACTION_NOT_SAVED)
+                st.error(orchestrator.ACTION_NOT_SAVED)
             else:
                 st.session_state.pop(loaded_key, None)
                 st.success(f"Rerun complete: {state}")

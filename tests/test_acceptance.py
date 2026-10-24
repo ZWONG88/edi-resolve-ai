@@ -1,6 +1,6 @@
 """P0 release gate: acceptance tests AT01-AT24 (PRD section 21).
 
-Each test runs end to end through backend.service against an isolated temp database
+Each test runs end to end through backend.orchestrator against an isolated temp database
 and asserts case state, line findings, normalized values, evidence and audit events.
 """
 
@@ -11,14 +11,16 @@ import time
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
-from backend import comparator, db, service
+from backend import comparator, db, orchestrator
+from backend.config import get_settings
 from backend.exceptions import (
     AuditPersistenceError,
     ReviewValidationError,
     StaleVersionError,
 )
-from backend.models import TolerancePolicy
+from backend.models import Money, ReconciliationPolicy, ReviewActionType, ReviewRequest
 from tests.conftest import REFERENCE, fx
 
 
@@ -28,6 +30,13 @@ def findings(conn, case_id: str, ev: int | None = None) -> dict[str, dict]:
 
 def events(conn, case_id: str) -> list[str]:
     return [r["event_type"] for r in db.list_audit_events(conn, case_id)]
+
+
+def review(conn, case_id: str, action: str, reason: str, version: int, key: str, **kw):
+    request = ReviewRequest(case_id=case_id, case_version=version,
+                            action=ReviewActionType(action.upper()), reason=reason,
+                            escalation_owner=kw.pop("owner", None), idempotency_key=key, **kw)
+    return orchestrator.review_action(conn, request)
 
 
 def case(conn, case_id: str):
@@ -54,14 +63,14 @@ def test_at01_exact_match(conn, run) -> None:
 
 def test_at02_uom_normalized_equality(conn, run) -> None:
     out = run("inv_AT02.json", "po_AT02.json")
-    rec = result(conn, out.case_id)["records"][0]
+    rec = result(conn, out.case_id)["line_results"][0]
     assert out.result_state == "MATCHED_2WAY"
     assert rec["po_value_normalized"]["quantity"] == "600"
     assert rec["invoice_value_normalized"]["quantity"] == "600"
     assert Decimal(rec["po_value_normalized"]["unit_price"]) == Decimal("2")
     assert Decimal(rec["invoice_value_normalized"]["unit_price"]) == Decimal("2")
     assert rec["invoice_value_normalized"]["extension"] == "1200.00"
-    assert "ref.uom.PROD-CS-001" in result(conn, out.case_id)["evidence"]
+    assert "ref.uom.PROD-CS-001" in result(conn, out.case_id)["evidence_index"]
 
 
 def test_at03_missing_conversion_insufficient_evidence(conn, run) -> None:
@@ -72,7 +81,7 @@ def test_at03_missing_conversion_insufficient_evidence(conn, run) -> None:
     for check in ("quantity", "unit_price", "extension_vs_po"):
         assert f[check]["check_status"] == "CHECK_NOT_EVALUATED"
         assert f[check]["delta"] is None  # no guessed variance
-    assert not any(k.startswith("ref.uom") for k in result(conn, out.case_id)["evidence"])
+    assert not any(k.startswith("ref.uom") for k in result(conn, out.case_id)["evidence_index"])
 
 
 def test_at04_price_variance(conn, run) -> None:
@@ -93,14 +102,14 @@ def test_at05_contract_displayed_separately(conn, run) -> None:
     assert Decimal(f["unit_price"]["normalized_po_value"]) == Decimal("2.00")
     assert f["contract_reference"]["check_status"] == "CHECK_PASSED"
     assert "does not override" in f["contract_reference"]["message"]
-    expl, _ = service.request_ai_explanation(conn, out.case_id)
+    expl, _ = orchestrator.request_ai_explanation(conn, out.case_id)
     assert "contract.CTR-005" in expl.cited_evidence_ids
     assert "hypothesis" in expl.possible_cause.lower()
 
 
 def test_at06_ai_abstains_without_contract(conn, run) -> None:
     out = run("inv_AT04.json", "po_AT04.json")
-    expl, _ = service.request_ai_explanation(conn, out.case_id)
+    expl, _ = orchestrator.request_ai_explanation(conn, out.case_id)
     assert expl.status == "AI_ABSTAIN"
     assert "contract changed" not in expl.possible_cause.lower()
     assert expl.missing_evidence
@@ -109,7 +118,7 @@ def test_at06_ai_abstains_without_contract(conn, run) -> None:
 
 def test_at07_partial_billing(conn, run) -> None:
     out = run("inv_AT07.json", "po_AT07.json")
-    rec = result(conn, out.case_id)["records"][0]
+    rec = result(conn, out.case_id)["line_results"][0]
     assert out.result_state == "PARTIAL_BILLING"
     assert rec["delta"]["po_balance"] == "60"
     assert findings(conn, out.case_id)["quantity"]["check_status"] == "CHECK_PASSED"
@@ -158,7 +167,7 @@ def test_at11_quarantine_with_exact_error(conn, run) -> None:
     unsupported = run("inv_AT11_unsupported.json")
     assert unsupported.result_state == "QUARANTINED"
     assert result(conn, unsupported.case_id)["error"]["field"] == "version"
-    envelope = service.process(conn, b"{broken", None)
+    envelope = orchestrator.process(conn, b"{broken", None)
     assert result(conn, envelope.case_id)["error"]["field"] == "<envelope>"
 
 
@@ -179,21 +188,21 @@ def test_at12_currency_and_unsupported_charges(conn, run) -> None:
 
 def test_at13_decimal_precision(conn, run) -> None:
     a = run("inv_AT13a.json", "po_AT13a.json")
-    rec = result(conn, a.case_id)["records"][0]
+    rec = result(conn, a.case_id)["line_results"][0]
     assert rec["po_value_normalized"]["extension"] == "1.01"
     assert comparator.round_money(Decimal("3") * Decimal("0.335")) == Decimal("1.01")
     b = run("inv_AT13b.json", "po_AT13b.json")
-    rec_b = result(conn, b.case_id)["records"][0]
+    rec_b = result(conn, b.case_id)["line_results"][0]
     assert Decimal(rec_b["po_value_normalized"]["unit_price"]) == Decimal("0.10")
     assert rec_b["po_value_normalized"]["extension"] == "2.00"
     assert a.result_state == b.result_state == "MATCHED_2WAY"
 
 
 def test_at14_tolerance_boundary(conn, run) -> None:
-    policy = TolerancePolicy(price_abs=Decimal("0.01"), version="AT14-abs-0.01")
+    policy = ReconciliationPolicy.baseline().model_copy(update={
+        "price_abs_tolerance": Money(amount=Decimal("0.01")), "policy_version": "AT14-abs-0.01"})
     ok = run("inv_AT14a.json", "po_AT14.json", policy=policy)
-    bad = run("inv_AT14b.json", "po_AT14.json", policy=TolerancePolicy(
-        price_abs=Decimal("0.01"), version="AT14-abs-0.01"))
+    bad = run("inv_AT14b.json", "po_AT14.json", policy=policy)
     f_ok = findings(conn, ok.case_id)["unit_price"]
     f_bad = findings(conn, bad.case_id)["unit_price"]
     assert f_ok["check_status"] == "CHECK_PASSED" and f_ok["delta"] == "+0.01"
@@ -218,7 +227,7 @@ def test_at15_ai_cannot_inject_facts(conn, run) -> None:
                 "cited_evidence_ids": ["contract.CTR-FAKE-999"], "uncertainty_note": "",
                 "missing_evidence": [], "suggested_next_action": "APPROVE_PAYMENT"}
 
-    expl, _ = service.request_ai_explanation(conn, out.case_id, stub_mode=False,
+    expl, _ = orchestrator.request_ai_explanation(conn, out.case_id,
                                              generate=injected)
     assert expl.status == "AI_ABSTAIN"
     assert expl.possible_cause == ""
@@ -237,21 +246,20 @@ def test_at16_ai_unavailable_keeps_findings(conn, run) -> None:
         time.sleep(1)
         return "{}"
 
-    import os
-    os.environ["AI_TIMEOUT_SECONDS"] = "0.1"
-    try:
-        expl, rec_v = service.request_ai_explanation(conn, out.case_id, stub_mode=False,
-                                                     generate=slow)
-    finally:
-        del os.environ["AI_TIMEOUT_SECONDS"]
+    expl, rec_v = orchestrator.request_ai_explanation(conn, out.case_id, generate=slow,
+                                                      timeout_seconds=0.1)
     assert expl.status == "AI_UNAVAILABLE" and rec_v is None
-    bad, _ = service.request_ai_explanation(conn, out.case_id, stub_mode=False,
-                                            generate=lambda s, u: "not json")
+    bad, _ = orchestrator.request_ai_explanation(conn, out.case_id,
+                                                 generate=lambda s, u: "not json")
+    assert bad.status == "AI_UNAVAILABLE"
+    down, _ = orchestrator.request_ai_explanation(conn, out.case_id,
+                                                  provider="mock_unavailable")
+    assert down.status == "AI_UNAVAILABLE"
     assert bad.status == "AI_UNAVAILABLE"
     assert findings(conn, out.case_id)["unit_price"]["delta"] == "+0.10"
     c = case(conn, out.case_id)
-    service.review_action(conn, out.case_id, "escalate", "AI down; pricing to check", c["version"],
-                          "at16-1", owner="pricing owner")
+    review(conn, out.case_id, "escalate", "AI down; pricing to check", c["version"],
+           "at16-1", owner="pricing owner")
     assert case(conn, out.case_id)["review_status"] == "ESCALATED"
 
 
@@ -259,10 +267,10 @@ def test_at17_three_review_actions(conn, run) -> None:
     a = run("inv_AT04.json", "po_AT04.json")
     b = run("inv_AT05.json", "po_AT05.json")
     c = run("inv_AT03.json", "po_AT03.json")
-    service.review_action(conn, a.case_id, "approve", "Request corrected invoice at PO price",
+    review(conn, a.case_id, "approve", "Request corrected invoice at PO price",
                           1, "at17-a")
-    service.review_action(conn, b.case_id, "reject", "Contract not yet verified", 1, "at17-b")
-    service.review_action(conn, c.case_id, "escalate", "Need CS pack size", 1, "at17-c",
+    review(conn, b.case_id, "reject", "Contract not yet verified", 1, "at17-b")
+    review(conn, c.case_id, "escalate", "Need CS pack size", 1, "at17-c",
                           owner="product-data owner")
     ca, cb, cc = case(conn, a.case_id), case(conn, b.case_id), case(conn, c.case_id)
     assert (ca["review_status"], cb["review_status"], cc["review_status"]) == (
@@ -272,19 +280,21 @@ def test_at17_three_review_actions(conn, run) -> None:
              if r["event_type"].startswith("HUMAN_")}
     assert human[a.case_id]["reviewer_reason"] == "Request corrected invoice at PO price"
     assert human[c.case_id]["escalation_owner"] == "product-data owner"
-    with pytest.raises(ReviewValidationError):
-        service.review_action(conn, c.case_id, "escalate", "x", 2, "at17-d", owner=None)
+    with pytest.raises(ValidationError, match="escalation_owner"):
+        review(conn, c.case_id, "escalate", "x", 2, "at17-d", owner=None)
+    with pytest.raises(ReviewValidationError, match="accountable owner"):
+        review(conn, c.case_id, "escalate", "x", 2, "at17-e", owner="my cousin")
 
 
 def test_at18_blocked_closure_reason_and_stale(conn, run) -> None:
     out = run("inv_AT03.json", "po_AT03.json")
     with pytest.raises(ReviewValidationError, match="Closure blocked"):
-        service.review_action(conn, out.case_id, "approve", "close it", 1, "k1", close=True)
-    with pytest.raises(ReviewValidationError, match="reason"):
-        service.review_action(conn, out.case_id, "approve", "   ", 1, "k2")
-    service.review_action(conn, out.case_id, "reject", "first", 1, "k3")
+        review(conn, out.case_id, "approve", "close it", 1, "k1", close=True)
+    with pytest.raises(ValidationError, match="reason"):
+        review(conn, out.case_id, "approve", "   ", 1, "k2")
+    review(conn, out.case_id, "reject", "first", 1, "k3")
     with pytest.raises(StaleVersionError):
-        service.review_action(conn, out.case_id, "approve", "stale", 1, "k4")
+        review(conn, out.case_id, "approve", "stale", 1, "k4")
     c = case(conn, out.case_id)
     assert c["status"] == "INSUFFICIENT_EVIDENCE" and c["version"] == 2
     assert conn.execute("SELECT COUNT(*) FROM allocations").fetchone()[0] == 0
@@ -301,15 +311,15 @@ def test_at19_audit_failure_rolls_back_then_retry(conn, run, monkeypatch) -> Non
 
     monkeypatch.setattr(db, "write_audit_event", failing)
     with pytest.raises(AuditPersistenceError):
-        service.review_action(conn, out.case_id, "approve", "ok", 1, "at19-key")
+        review(conn, out.case_id, "approve", "ok", 1, "at19-key")
     c = case(conn, out.case_id)
     assert c["review_status"] == "OPEN" and c["version"] == 1
-    assert service.ACTION_NOT_SAVED == "Action not saved. Please retry."
+    assert orchestrator.ACTION_NOT_SAVED == "Action not saved. Please retry."
     assert conn.execute("SELECT COUNT(*) FROM allocations WHERE active=1").fetchone()[0] == 1
 
     monkeypatch.setattr(db, "write_audit_event", real)
-    service.review_action(conn, out.case_id, "approve", "ok", 1, "at19-key")
-    service.review_action(conn, out.case_id, "approve", "ok", 1, "at19-key")  # retried again
+    review(conn, out.case_id, "approve", "ok", 1, "at19-key")
+    review(conn, out.case_id, "approve", "ok", 1, "at19-key")  # retried again
     assert events(conn, out.case_id).count("HUMAN_APPROVE") == 1
     assert case(conn, out.case_id)["version"] == 2
 
@@ -321,25 +331,26 @@ def test_at20_rules_failure_hold_retry_restart(db_file, conn, run, monkeypatch) 
         calls["n"] += 1
         raise RuntimeError("reference service down")
 
-    monkeypatch.setattr(service.comparator, "compare", broken)
+    monkeypatch.setattr(orchestrator.comparator, "compare", broken)
     out = run("inv_AT07.json", "po_AT07.json")
     assert out.result_state == "TECHNICAL_HOLD"
-    assert calls["n"] == service.MAX_RULE_ATTEMPTS
-    assert events(conn, out.case_id).count("RULES_RETRY") == service.MAX_RULE_ATTEMPTS
+    assert calls["n"] == get_settings().max_retry_attempts
+    assert events(conn, out.case_id).count("RULES_RETRY") == get_settings().max_retry_attempts
     assert conn.execute("SELECT COUNT(*) FROM allocations").fetchone()[0] == 0
 
     monkeypatch.undo()
     conn.close()
     restarted = db.init_db(db_file)  # application restart
-    assert service.rerun_case(restarted, out.case_id, reference_dir=REFERENCE) == "PARTIAL_BILLING"
-    assert service.rerun_case(restarted, out.case_id, reference_dir=REFERENCE) == "PARTIAL_BILLING"
+    for _ in range(2):  # retry after restart, then retry again
+        state = orchestrator.rerun_case(restarted, out.case_id, reference_dir=REFERENCE)
+        assert state == "PARTIAL_BILLING"
     active = restarted.execute("SELECT quantity FROM allocations WHERE active = 1").fetchall()
     assert [a["quantity"] for a in active] == ["40"]  # no double allocation
     restarted.close()
 
 
 def test_at21_receipt_with_three_way_disabled(conn, run) -> None:
-    out = service.process(conn, fx("inv_AT01.json"), fx("po_AT01.json"),
+    out = orchestrator.process(conn, fx("inv_AT01.json"), fx("po_AT01.json"),
                           receipt_src=fx("receipt_AT21.json"), reference_dir=REFERENCE)
     assert out.result_state == "MATCHED_2WAY"
     assert out.result_state != "MATCHED_3WAY"
@@ -352,17 +363,17 @@ def test_at21_receipt_with_three_way_disabled(conn, run) -> None:
 
 def test_at22_rerun_invalidates_stale_suggestion(conn, run) -> None:
     out = run("inv_AT04.json", "po_AT04.json")
-    expl, rec_v1 = service.request_ai_explanation(conn, out.case_id)
+    expl, rec_v1 = orchestrator.request_ai_explanation(conn, out.case_id)
     assert rec_v1 is not None
-    state = service.rerun_case(conn, out.case_id, fx("inv_AT22_corrected.json"),
+    state = orchestrator.rerun_case(conn, out.case_id, fx("inv_AT22_corrected.json"),
                                reference_dir=REFERENCE)
     assert state == "MATCHED_2WAY"
     c = case(conn, out.case_id)
     with pytest.raises(StaleVersionError):
-        service.review_action(conn, out.case_id, "approve", "apply AI", c["version"], "at22",
+        review(conn, out.case_id, "approve", "apply AI", c["version"], "at22",
                               recommendation_version=rec_v1)
     assert findings(conn, out.case_id, 1)["unit_price"]["delta"] == "+0.10"  # history kept
-    assert service.get_cached_explanation(conn, out.case_id, 1) is not None
+    assert orchestrator.get_cached_explanation(conn, out.case_id, 1) is not None
     assert "RERUN_VERSION_SUPERSEDED" in events(conn, out.case_id)
     docs = conn.execute("SELECT validation_status FROM ingested_documents WHERE doc_type='810'"
                         " ORDER BY ingested_at").fetchall()

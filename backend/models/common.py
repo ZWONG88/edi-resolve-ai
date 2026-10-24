@@ -7,13 +7,13 @@ No float arithmetic is permitted anywhere in this file.
 
 from __future__ import annotations
 
-from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+import uuid
+from datetime import datetime, timezone
+from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, field_validator, model_serializer, model_validator
-
+from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
 
 # ---------------------------------------------------------------------------
 # Enums
@@ -48,20 +48,43 @@ class FindingStatus(StrEnum):
     """
 
     MATCHED_2WAY = "MATCHED_2WAY"               # All applicable P0 checks pass
-    MATCHED_3WAY = "MATCHED_3WAY"               # All P0 + P2 receipt checks pass (P2 only)
+    MATCHED_3WAY = "MATCHED_3WAY"               # Reserved for P2; never emitted in P0
     PRICE_VARIANCE = "PRICE_VARIANCE"            # Normalized unit price differs beyond tolerance
     QUANTITY_VARIANCE = "QUANTITY_VARIANCE"      # Cumulative invoice qty exceeds PO authorization
-    PARTIAL_BILLING = "PARTIAL_BILLING"          # Invoice qty below remaining PO balance; allocation recorded
-    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # Reference data missing, expired, or contradictory
+    PARTIAL_BILLING = "PARTIAL_BILLING"          # Below remaining PO balance; allocation recorded
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # Reference missing/expired/contradictory
     WAIT_DOCUMENT = "WAIT_DOCUMENT"              # PO or required document not found
-    WAIT_RECEIPT = "WAIT_RECEIPT"               # P2 enabled; no valid receipt yet
-    REVIEW_LINK = "REVIEW_LINK"                 # Ambiguous product or line match; analyst must select
-    RECEIPT_VARIANCE = "RECEIPT_VARIANCE"        # Accepted receipt qty below invoice qty (P2)
-    OVER_RECEIPT = "OVER_RECEIPT"               # Accepted receipt exceeds PO authorization (P2)
-    RECEIPT_REVIEW = "RECEIPT_REVIEW"            # Ambiguous receipt status (P2)
+    WAIT_RECEIPT = "WAIT_RECEIPT"               # Reserved for P2; never emitted in P0
+    REVIEW_LINK = "REVIEW_LINK"                 # Ambiguous line match; analyst selects
+    RECEIPT_VARIANCE = "RECEIPT_VARIANCE"        # Reserved for P2; never emitted in P0
+    OVER_RECEIPT = "OVER_RECEIPT"               # Reserved for P2; never emitted in P0
+    RECEIPT_REVIEW = "RECEIPT_REVIEW"            # Reserved for P2; never emitted in P0
     NOT_EVALUATED = "NOT_EVALUATED"              # Check skipped — NOT the same as CHECK_FAILED
     CHECK_FAILED = "CHECK_FAILED"               # Check ran and definitively failed
     TECHNICAL_HOLD = "TECHNICAL_HOLD"            # Internal error; safe retry required
+    QUARANTINED = "QUARANTINED"                  # Case for a document that failed validation
+    DUPLICATE_CONFLICT = "DUPLICATE_CONFLICT"    # Case held: same business key, new content
+
+
+class CheckStatus(StrEnum):
+    """
+    Outcome of one individual check (unit price, quantity, extension, ...).
+
+    CHECK_NOT_EVALUATED is never a pass and never a failure.
+    """
+
+    CHECK_PASSED = "CHECK_PASSED"
+    CHECK_FAILED = "CHECK_FAILED"
+    CHECK_NOT_EVALUATED = "CHECK_NOT_EVALUATED"
+
+
+class ReviewStatus(StrEnum):
+    """Human workflow status, tracked separately from the deterministic result."""
+
+    OPEN = "OPEN"
+    RESOLUTION_APPROVED = "RESOLUTION_APPROVED"
+    RECOMMENDATION_REJECTED = "RECOMMENDATION_REJECTED"
+    ESCALATED = "ESCALATED"
 
 
 class ReviewActionType(StrEnum):
@@ -76,7 +99,7 @@ class ReceiptEventType(StrEnum):
     """Semantics of a receiving advice event (P2)."""
 
     INCREMENTAL = "INCREMENTAL"  # This event adds to the running total
-    CUMULATIVE = "CUMULATIVE"    # This event is the current full snapshot; prior snapshots are superseded
+    CUMULATIVE = "CUMULATIVE"    # Full current snapshot; supersedes prior ones
 
 
 # ---------------------------------------------------------------------------
@@ -126,7 +149,12 @@ class Money(BaseModel):
 
     @classmethod
     def from_str(cls, s: str) -> "Money":
-        """Parse a string and quantize to two decimal places using ROUND_HALF_UP."""
+        """Parse a string and quantize to two decimal places using ROUND_HALF_UP.
+
+        For money *amounts* only (extensions, totals). Never use it for unit prices:
+        PRD 18.1 forbids rounding a unit price before extension ($0.335 must stay
+        $0.335). Build unit prices with Money(amount=Decimal("0.335")), which keeps full precision.
+        """
         d = Decimal(s).quantize(_TWO_PLACES, rounding=ROUND_HALF_UP)
         return cls(amount=d)
 
@@ -186,24 +214,35 @@ class Evidence(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _uuid() -> str:
+    return uuid.uuid4().hex
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class AuditEvent(BaseModel):
     """
     A single append-only audit record.  Every state transition, human action,
     and service call produces one AuditEvent.  Fields match PRD section 20.2.
     """
 
-    event_id: str           # UUID; unique per event
-    case_id: str            # Which reconciliation case this belongs to
-    correlation_key: str    # Idempotency key; same action retry shares the same key
+    event_id: str = Field(default_factory=_uuid)  # UUID; unique per event
+    case_id: str | None = None   # None for document-level events (e.g. a stored PO)
+    correlation_key: str = Field(default_factory=_uuid)  # Idempotency key; retries share it
     actor: str              # Service name or reviewer identifier
-    utc_timestamp: datetime # Must be timezone-aware UTC
-    event_type: str         # e.g. "RECONCILIATION_RUN", "REVIEW_ACTION", "TECHNICAL_HOLD"
+    utc_timestamp: datetime = Field(default_factory=_utc_now)  # Timezone-aware UTC
+    event_type: str         # e.g. "RULES_EXECUTED", "HUMAN_APPROVE", "TECHNICAL_HOLD"
 
-    before_state: str | None = None       # JSON-serialized previous case state
-    after_state: str | None = None        # JSON-serialized new case state
-    doc_hashes: dict[str, str] | None = None    # {doc_id: sha256_hex}
-    source_pointers: list[str] | None = None    # Segment/field references from raw source
-    findings: str | None = None           # JSON-serialized list[LineResult]
-    reason: str | None = None             # Reviewer-provided reason (required for REVIEW_ACTION events)
+    before_state: str | None = None       # Previous case state
+    after_state: str | None = None        # New case state
+    doc_hashes: dict[str, str] | None = None    # {doc_id or role: sha256 hash}
+    source_pointers: list[str] | None = None    # Evidence IDs / source field references
+    findings: str | None = None           # JSON-serialized findings summary
+    reason: str | None = None             # Reviewer reason (required for review actions)
     escalation_owner: str | None = None   # Required when action is ESCALATE
     policy_version: str | None = None     # Identifies the reconciliation policy used
+    reference_version: str | None = None  # Hash of the reference data snapshot used
+    recommendation_version: str | None = None  # AI recommendation the action applies to
+    calculations: dict[str, Any] | None = None  # Calculations / run details

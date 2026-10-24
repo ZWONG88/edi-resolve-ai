@@ -10,7 +10,7 @@ import ui_shared
 
 @pytest.fixture(autouse=True)
 def _fresh_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("EDI_DB_PATH", str(tmp_path / "ui.db"))
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "ui.db"))
     ui_shared.get_conn.clear()
     yield
     ui_shared.get_conn.clear()
@@ -28,7 +28,7 @@ def test_upload_review_audit_flow() -> None:
     next(b for b in review.button if b.label == "Get AI suggestion").click().run()
     assert any("AI Suggestion — requires human review" in m.value for m in review.markdown)
     next(b for b in review.button if "Submit" in str(b.label)).click().run()
-    assert any("reason is required" in e.value for e in review.error)
+    assert any("reason must be a non-empty string" in e.value for e in review.error)
 
     audit = AppTest.from_file("../pages/audit.py", default_timeout=30).run()
     assert not audit.exception and len(audit.dataframe) == 1

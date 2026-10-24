@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from backend import db, service
+from backend import db, orchestrator
 
 FIXTURES = Path(__file__).parent / "fixtures"
 REFERENCE = FIXTURES / "reference"
@@ -18,9 +18,16 @@ def fx(name: str) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def _stub_ai(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AI_STUB_MODE", "true")
+def _isolated_settings(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Env vars beat a developer's .env, so tests always run offline and isolated."""
+    if request.node.name.startswith(("test_settings", "test_three_way")):
+        return  # PR #1 settings tests isolate themselves with _env_file
+    monkeypatch.setenv("AI_PROVIDER", "mock")
     monkeypatch.setenv("THREE_WAY_ENABLED", "false")
+    monkeypatch.setenv("MAX_RETRY_ATTEMPTS", "3")
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "default.db"))
 
 
 @pytest.fixture
@@ -39,8 +46,8 @@ def conn(db_file: Path) -> sqlite3.Connection:
 def run(conn: sqlite3.Connection):
     """Process an invoice (and optional PO) against the test reference set."""
 
-    def _run(invoice: str, po: str | None = None, **kwargs) -> service.IngestOutcome:
-        return service.process(
+    def _run(invoice: str, po: str | None = None, **kwargs) -> orchestrator.IngestOutcome:
+        return orchestrator.process(
             conn, fx(invoice), fx(po) if po else None, reference_dir=REFERENCE, **kwargs
         )
 

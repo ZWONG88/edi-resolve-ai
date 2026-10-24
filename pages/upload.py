@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import streamlit as st
 
-from backend import service
+from backend import orchestrator
 from backend.exceptions import AuditPersistenceError
-from ui_shared import mode_banner, RAW_DIR, SCENARIOS, badge, get_conn
+from ui_shared import RAW_DIR, SCENARIOS, badge, get_conn, mode_banner
 
 mode_banner()
 st.title("Upload & Process")
@@ -40,9 +40,9 @@ else:
 if st.button("Process", type="primary", disabled=inv_bytes is None):
     try:
         with st.spinner("Parsing and running deterministic checks..."):
-            out = service.process(conn, inv_bytes, po_bytes, receipt_bytes)
+            out = orchestrator.process(conn, inv_bytes, po_bytes, receipt_bytes)
     except AuditPersistenceError:
-        st.error(service.ACTION_NOT_SAVED)
+        st.error(orchestrator.ACTION_NOT_SAVED)
     except Exception as exc:  # noqa: BLE001 - never show a traceback to the analyst
         st.error(f"Processing failed: {type(exc).__name__}. Nothing was saved.")
     else:
@@ -67,8 +67,6 @@ with st.expander("Demo tools"):
     st.caption("Clears every case, document and audit event in the local demo database.")
     confirm = st.checkbox("I understand this deletes all local demo data")
     if st.button("Reset demo database", disabled=not confirm):
-        for table in ("audit_events", "ai_explanations", "allocations", "case_findings",
-                      "reconciliation_cases", "ingested_documents"):
-            conn.execute(f"DELETE FROM {table}")
+        orchestrator.reset_demo_data(conn)
         st.session_state.pop("selected_case", None)
         st.success("Demo database cleared.")

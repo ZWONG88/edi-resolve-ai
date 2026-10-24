@@ -30,6 +30,9 @@ class ReviewRequest(BaseModel):
     action: ReviewActionType
     reason: str                # Non-empty after stripping whitespace
     escalation_owner: str | None = None  # Required when action == ESCALATE
+    idempotency_key: str | None = None   # Retries of the same action reuse this key
+    close: bool = False                  # APPROVE as a closing exception disposition
+    recommendation_version: str | None = None  # AI suggestion this action applies, if any
 
     @field_validator("case_version")
     @classmethod

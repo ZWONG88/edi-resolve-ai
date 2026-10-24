@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 import uuid
 from collections.abc import Iterator
@@ -12,10 +11,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from backend.config import get_settings
 from backend.exceptions import AuditPersistenceError
-from backend.models import AuditEvent
-
-DEFAULT_DB_PATH = "edi_resolve.db"
+from backend.models import AuditEvent, ReviewRecord
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS ingested_documents (
@@ -105,12 +103,26 @@ CREATE TABLE IF NOT EXISTS audit_events (
     before_state TEXT,
     after_state TEXT,
     doc_hashes TEXT,
-    reference_versions TEXT,
+    source_pointers TEXT,
+    findings TEXT,
+    policy_version TEXT,
+    reference_version TEXT,
     calculations_json TEXT,
     recommendation_version TEXT,
     reviewer_reason TEXT,
     escalation_owner TEXT,
-    idempotency_key TEXT UNIQUE
+    idempotency_key TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS review_records (
+    id TEXT PRIMARY KEY,
+    case_id TEXT NOT NULL REFERENCES reconciliation_cases(id),
+    case_version INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    escalation_owner TEXT,
+    event_at TEXT NOT NULL,
+    audit_event_id TEXT NOT NULL REFERENCES audit_events(id)
 );
 """
 
@@ -124,11 +136,13 @@ def new_id(prefix: str) -> str:
 
 
 def db_path() -> str:
-    return os.getenv("EDI_DB_PATH", DEFAULT_DB_PATH)
+    return get_settings().database_path
 
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path or db_path()), isolation_level=None,
+    target = Path(path or db_path())
+    target.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(target), isolation_level=None,
                            check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -164,25 +178,42 @@ def write_audit_event(conn: sqlite3.Connection, event: AuditEvent) -> str:
     Raises AuditPersistenceError on any storage failure so the caller's
     transaction rolls back and the action is reported as not saved.
     """
-    event_id = new_id("EVT")
     try:
         conn.execute(
             """INSERT INTO audit_events (id, case_id, event_type, actor, event_at,
-               before_state, after_state, doc_hashes, reference_versions,
-               calculations_json, recommendation_version, reviewer_reason,
-               escalation_owner, idempotency_key)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               before_state, after_state, doc_hashes, source_pointers, findings,
+               policy_version, reference_version, calculations_json,
+               recommendation_version, reviewer_reason, escalation_owner, idempotency_key)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
-                event_id, event.case_id, event.event_type, event.actor, utc_now(),
-                event.before_state, event.after_state, _dumps(event.doc_hashes),
-                _dumps(event.reference_versions), _dumps(event.calculations),
-                event.recommendation_version, event.reviewer_reason,
-                event.escalation_owner, event.idempotency_key,
+                event.event_id, event.case_id, event.event_type, event.actor,
+                event.utc_timestamp.isoformat(), event.before_state, event.after_state,
+                _dumps(event.doc_hashes or {}), _dumps(event.source_pointers or []),
+                event.findings, event.policy_version, event.reference_version,
+                _dumps(event.calculations or {}), event.recommendation_version,
+                event.reason, event.escalation_owner, event.correlation_key,
             ),
         )
     except sqlite3.Error as exc:
         raise AuditPersistenceError(f"audit write failed: {exc}") from exc
-    return event_id
+    return event.event_id
+
+
+def write_review_record(conn: sqlite3.Connection, record: ReviewRecord) -> None:
+    """Persist a review action; call inside the same transaction as its audit event."""
+    conn.execute(
+        """INSERT INTO review_records (id, case_id, case_version, action, reason,
+           escalation_owner, event_at, audit_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (record.review_id, record.case_id, record.case_version, record.action.value,
+         record.reason, record.escalation_owner, record.utc_timestamp.isoformat(),
+         record.audit_event_id),
+    )
+
+
+def list_review_records(conn: sqlite3.Connection, case_id: str) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM review_records WHERE case_id = ? ORDER BY event_at, rowid", (case_id,)
+    ).fetchall()
 
 
 def audit_key_exists(conn: sqlite3.Connection, key: str) -> bool:

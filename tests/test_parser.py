@@ -10,11 +10,12 @@ from tests.conftest import fx
 def test_valid_po_load_decimal_values() -> None:
     po = parse_po(fx("po_AT01.json"))
     line = po.lines[0]
-    assert po.po_number == "PO-AT01"
-    assert line.quantity == Decimal("100")
-    assert line.unit_price == Decimal("2.00")
-    assert isinstance(line.unit_price, Decimal)
-    assert line.raw.fields["unit_price"] == "2.00"
+    assert po.po_id == "PO-AT01"
+    assert line.ordered_qty == Decimal("100")
+    assert line.unit_price.amount == Decimal("2.00")
+    assert isinstance(line.unit_price.amount, Decimal)
+    assert line.raw["unit_price"] == "2.00"
+    assert po.content_hash.startswith("sha256:")
 
 
 def test_missing_quantity_names_field() -> None:
@@ -25,7 +26,7 @@ def test_missing_quantity_names_field() -> None:
 
 def test_price_precision_no_float_drift() -> None:
     inv = parse_invoice(fx("inv_AT13a.json"))
-    assert inv.lines[0].unit_price == Decimal("0.335")
+    assert inv.lines[0].unit_price.amount == Decimal("0.335")  # never rounded to 0.34
     assert str(inv.lines[0].unit_price) == "0.335"
 
 
@@ -64,10 +65,25 @@ def test_wrong_doc_type() -> None:
 
 
 def test_missing_price_basis_is_none_not_defaulted() -> None:
-    assert parse_po(fx("po_AT24.json")).lines[0].price_basis_qty is None
+    assert parse_po(fx("po_AT24.json")).lines[0].price_basis is None
 
 
 def test_receipt_stored_only() -> None:
     receipt = parse_receipt(fx("receipt_AT21.json"))
     assert receipt.doc_type == "861"
+    assert receipt.receipt is not None  # validates against the P2 ReceivingAdvice schema
     assert detect_doc_type(fx("receipt_AT21.json")) == "861"
+
+
+def test_invoice_partner_and_line_reference() -> None:
+    inv = parse_invoice(fx("inv_AT23_other_partner.json"))
+    assert (inv.buyer_id, inv.supplier_id) == ("RetailCo", "OtherSupplierLLC")
+    assert inv.po_references == ["PO-AT23"]
+    assert inv.lines[0].line_reference is None
+
+
+def test_bad_date_names_field() -> None:
+    bad = fx("po_AT01.json").read_bytes().replace(b"2026-03-01", b"03/01/2026")
+    with pytest.raises(ParseError) as exc:
+        parse_po(bad)
+    assert exc.value.field_name == "po_date"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from backend import db
+from backend import orchestrator
 from ui_shared import get_conn, mode_banner
 
 st.set_page_config(page_title="EDIResolve AI", layout="wide")
@@ -17,7 +17,7 @@ st.markdown(
     "invoices**, with evidence-grounded AI explanations for human reviewers."
 )
 
-cases = db.list_cases(conn)
+cases = orchestrator.list_cases(conn)
 open_cases = [c for c in cases if c["review_status"] == "OPEN" and c["status"] != "MATCHED_2WAY"]
 c1, c2, c3 = st.columns(3)
 c1.metric("Cases", len(cases))

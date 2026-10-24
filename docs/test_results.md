@@ -1,6 +1,6 @@
 # Test Results — P0 Release Gate
 
-Recorded 2026-10-23 on synthetic fixtures (`tests/fixtures/`), Python 3.12.7, AI in stub mode.
+Recorded 2026-10-23 on branch `feature/p0-mvp` (PR #1 schemas merged), synthetic fixtures (`tests/fixtures/`), Python 3.12.7, `AI_PROVIDER=mock`.
 These are results on labeled synthetic data only. They say nothing about production
 accuracy or payment timing (PRD 22.2).
 
@@ -8,9 +8,11 @@ accuracy or payment timing (PRD 22.2).
 
 | Suite | Result |
 |---|---|
-| Full `pytest` (unit + acceptance + UI smoke) | **73 passed**, 0 failed, 1 deselected (live watsonx integration test) |
+| Full `pytest` | **104 passed**, 0 failed, 1 deselected (live watsonx integration test) |
 | AT01–AT24 acceptance gate (`tests/test_acceptance.py`) | **24 / 24 passed** |
-| Lint (`flake8`, same rules as ruff config) | clean |
+| PR #1 schema tests (`tests/test_models.py`) | **23 / 23 passed** |
+| Other unit tests: parser 13, reference 11, comparator 13, AI 16, db 2, UI smoke 2 | all passed |
+| `ruff check .` | All checks passed |
 | `float(` in `backend/` money paths | none (only the AI timeout in seconds) |
 
 ## AT01–AT24 (actual outcomes)
@@ -48,7 +50,7 @@ tenant isolation; the test covers the cross-partner case only.
 
 ## Per-category detection (PRD 22.2)
 
-Each scenario runs end to end through `backend.service.process` on a fresh database.
+Each scenario runs end to end through `backend.orchestrator.process` on a fresh database.
 Results are reported per category so that easy matches can't hide misses.
 
 | Category | Fixture | Expected | Actual | |
@@ -78,7 +80,7 @@ Results are reported per category so that easy matches can't hide misses.
 ## Not verified here
 
 - **Live IBM watsonx.ai call.** `tests/test_ai_resolver.py::test_watsonx_live` is marked
-  `integration` and needs `WATSONX_API_KEY` / `WATSONX_PROJECT_ID` in `.env`.
+  `integration` and needs `AI_API_KEY` / `WATSONX_PROJECT_ID` in `.env`.
   Run it with `pytest -m integration`.
 - **Manual browser walkthrough.** UI flows were checked with Streamlit's headless `AppTest`
   (`tests/test_ui.py`) and a server boot/health check, not by clicking through in a browser.
@@ -94,4 +96,4 @@ Results are reported per category so that easy matches can't hide misses.
 | Audit history | ✅ Audit History page, append-only `audit_events` |
 | At least one insufficient-evidence case | ✅ AT03, AT12, AT24 |
 | Documented limitations | ✅ README "Known limitations" |
-| Reliable demo | ✅ offline stub by default; no keys needed |
+| Reliable demo | ✅ offline mock by default; no keys needed; `mock_unavailable` demos AI failure |

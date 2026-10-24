@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from backend import ai_resolver, db  # noqa: E402  (env must load first)
+from backend import ai_resolver, orchestrator  # noqa: E402  (env must load first)
 
 RAW_DIR = Path(__file__).resolve().parent / "data" / "raw"
 
@@ -57,7 +57,7 @@ STATE_COLORS = {
 
 @st.cache_resource
 def get_conn() -> sqlite3.Connection:
-    return db.init_db()
+    return orchestrator.open_db()
 
 
 def badge(state: str) -> str:
@@ -65,7 +65,11 @@ def badge(state: str) -> str:
 
 
 def mode_banner() -> None:
-    ai_mode = "Stub (offline)" if ai_resolver.stub_mode_enabled() else "IBM watsonx.ai Granite"
+    ai_mode = {
+        "mock": "Mock (offline stub)",
+        "mock_unavailable": "Mock — always unavailable",
+        "watsonx": "IBM watsonx.ai Granite",
+    }.get(ai_resolver.provider_name(), f"Unsupported ({ai_resolver.provider_name()})")
     st.sidebar.markdown(f"**Mode:** Two-way (P0)  \n**AI:** {ai_mode}")
     st.sidebar.caption("Receipt (861) matching is disabled. No action here pays an invoice "
                        "or changes an external system.")

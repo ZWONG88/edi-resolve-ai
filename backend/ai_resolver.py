@@ -9,7 +9,6 @@ engine, invented identifiers or disallowed actions cause the narrative to be dis
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -17,6 +16,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from backend.config import get_settings
 from backend.models import AIExplanation, CaseResult, CheckStatus
 
 PROMPT_VERSION = "explain-v1"
@@ -68,8 +68,12 @@ _IDENT_RE = re.compile(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b")
 Generate = Callable[[str, str], str]
 
 
-def stub_mode_enabled() -> bool:
-    return os.getenv("AI_STUB_MODE", "true").strip().lower() != "false"
+PROVIDERS = ("mock", "mock_unavailable", "watsonx")
+
+
+def provider_name() -> str:
+    """Configured provider: AI_PROVIDER = mock | mock_unavailable | watsonx."""
+    return get_settings().ai_provider.strip().lower()
 
 
 def build_evidence_bundle(result: CaseResult) -> dict[str, Any]:
@@ -92,13 +96,13 @@ def build_evidence_bundle(result: CaseResult) -> dict[str, Any]:
     missing = [
         f.check
         for f in result.all_findings()
-        if f.status == CheckStatus.NOT_EVALUATED and f.result_state is not None
+        if f.status == CheckStatus.CHECK_NOT_EVALUATED and f.result_state is not None
     ]
     return {
-        "case_state": result.result_state.value,
+        "case_state": result.overall_status.value,
         "policy_version": result.policy_version,
         "findings": findings,
-        "evidence": {k: str(v)[:_MAX_VALUE_LEN] for k, v in result.evidence.items()},
+        "evidence": {k: str(v)[:_MAX_VALUE_LEN] for k, v in result.evidence_map().items()},
         "missing_facts": missing,
         "allowed_actions": sorted(ALLOWED_ACTIONS),
     }
@@ -310,7 +314,7 @@ def validate_explanation(
 
 
 def _watsonx_model_id() -> str:
-    return os.getenv("WATSONX_MODEL_ID") or DEFAULT_WATSONX_MODEL
+    return get_settings().ai_model_id or DEFAULT_WATSONX_MODEL
 
 
 def watsonx_generate(system_prompt: str, user_content: str) -> str:
@@ -318,16 +322,13 @@ def watsonx_generate(system_prompt: str, user_content: str) -> str:
     from ibm_watsonx_ai import Credentials
     from ibm_watsonx_ai.foundation_models import ModelInference
 
-    api_key = os.getenv("WATSONX_API_KEY")
-    project_id = os.getenv("WATSONX_PROJECT_ID")
-    if not api_key or not project_id:
-        raise RuntimeError("WATSONX_API_KEY and WATSONX_PROJECT_ID must be set")
+    settings = get_settings()
+    if not settings.ai_api_key or not settings.watsonx_project_id:
+        raise RuntimeError("AI_API_KEY and WATSONX_PROJECT_ID must be set")
     model = ModelInference(
         model_id=_watsonx_model_id(),
-        credentials=Credentials(
-            url=os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com"), api_key=api_key
-        ),
-        project_id=project_id,
+        credentials=Credentials(url=settings.watsonx_url, api_key=settings.ai_api_key),
+        project_id=settings.watsonx_project_id,
         params={"temperature": 0, "max_tokens": 500},
     )
     response = model.chat(
@@ -341,19 +342,26 @@ def watsonx_generate(system_prompt: str, user_content: str) -> str:
 
 def explain(
     bundle: dict[str, Any],
-    stub_mode: bool | None = None,
+    provider: str | None = None,
     generate: Generate | None = None,
     timeout_seconds: float | None = None,
 ) -> AIExplanation:
-    """Return a validated explanation. Never raises; failures map to AI_* states."""
-    if stub_mode is None:
-        stub_mode = stub_mode_enabled()
-    if stub_mode and generate is None:
-        return validate_explanation(_stub_response(bundle), bundle, STUB_MODEL)
+    """Return a validated explanation. Never raises; failures map to AI_* states.
 
-    generate = generate or watsonx_generate
+    `generate` overrides the configured provider (used by tests and custom providers).
+    """
+    if generate is None:
+        provider = (provider or provider_name()).strip().lower()
+        if provider == "mock":
+            return validate_explanation(_stub_response(bundle), bundle, STUB_MODEL)
+        if provider == "mock_unavailable":
+            return _unavailable("AI_PROVIDER=mock_unavailable", "mock_unavailable")
+        if provider != "watsonx":
+            return _unavailable(f"unsupported AI provider {provider!r}", provider)
+        generate = watsonx_generate
+
     model = _watsonx_model_id() if generate is watsonx_generate else "custom-provider"
-    timeout = timeout_seconds or float(os.getenv("AI_TIMEOUT_SECONDS", "20"))
+    timeout = timeout_seconds or get_settings().ai_timeout_seconds
     user_content = json.dumps(bundle, sort_keys=True)
     pool = ThreadPoolExecutor(max_workers=1)
     try:

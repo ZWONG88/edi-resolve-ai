@@ -12,6 +12,8 @@ Build the P0 MVP end-to-end as a working skeleton first, then fill in real logic
 
 **P0 release gate:** AT01–AT24 acceptance tests must pass (PRD Section 21–22)
 
+> **Implementation note:** after merging PR #1, config moved to `backend/config.py` (`AI_STUB_MODE` became `AI_PROVIDER=mock|mock_unavailable|watsonx`, and `EDI_DB_PATH` became `DATABASE_PATH`). Models became the Pydantic package `backend/models/`, and the workflow service became `backend/orchestrator.py`. The task text below is kept as written.
+
 **P2 stretch goal:** Three-way 861 receipt matching — gated behind `three_way_enabled=false` flag; NOT required for P0
 
 ---
